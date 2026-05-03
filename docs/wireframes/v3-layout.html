@@ -497,6 +497,10 @@
   }
   .landing-conv-item:hover { background: var(--bg-hover); }
   .landing-conv-item.unread .landing-conv-name { font-weight: 600; color: var(--text-primary); }
+  .landing-conv-item.unread::before {
+    content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
+    background: #f44336; flex-shrink: 0;
+  }
   .landing-conv-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .landing-conv-ws { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
 
@@ -2123,10 +2127,6 @@
         <div class="sidebar-divider"></div>
 
         <div class="section-label">AI 配置</div>
-        <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('Gemini 设置')">
-          <span style="font-size:14px; margin-right:8px;">💎</span>
-          <span class="c-label">Gemini 设置</span>
-        </div>
         <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('模型平台')">
           <span style="font-size:14px; margin-right:8px;">🧠</span>
           <span class="c-label">模型平台</span>
@@ -2135,13 +2135,13 @@
           <span style="font-size:14px; margin-right:8px;">👥</span>
           <span class="c-label">助手管理</span>
         </div>
-        <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('Agent 设置')">
-          <span style="font-size:14px; margin-right:8px;">🤖</span>
-          <span class="c-label">Agent 设置</span>
+        <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('工具')">
+          <span style="font-size:14px; margin-right:8px;">🔧</span>
+          <span class="c-label">工具</span>
         </div>
-        <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('功能扩展')">
+        <div class="conv-item" style="padding:8px 20px;" onclick="showSettingsPage('技能')">
           <span style="font-size:14px; margin-right:8px;">⚡</span>
-          <span class="c-label">功能扩展</span>
+          <span class="c-label">技能</span>
         </div>
 
         <div class="sidebar-divider"></div>
@@ -3619,13 +3619,13 @@
       convs: [{ name: 'Q2 季度汇报', unread: false }]
     },
     'Morph PPT': {
-      avatar: '../../src/renderer/assets/profiles/morph.jpg',
+      avatar: '../../src/renderer/assets/profiles/morph-ppt.jpg',
       desc: 'Morph 动画演示文稿制作。',
       prompts: ['制作一个 Morph 过渡动画', '把静态 PPT 做成动态'],
       convs: []
     },
     '学术论文助手': {
-      avatar: '../../src/renderer/assets/profiles/academic.jpg',
+      avatar: '../../src/renderer/assets/profiles/academic-paper.jpg',
       desc: '学术论文、研究论文写作辅助。',
       prompts: ['帮我写论文摘要', '检查引用格式', '润色这段学术文字'],
       convs: [{ name: '帮我写一篇摘要', unread: false }]
@@ -4006,13 +4006,6 @@
   function spSec(title, cardHtml) { return '<div class="sp-section"><div class="sp-section-title">' + title + '</div><div class="sp-card">' + cardHtml + '</div></div>'; }
 
   var SETTINGS_PAGES = {
-    'Gemini 设置': function() {
-      return spSec('账号认证', spRow('Google 账号', '登录 Google 账号以使用 Gemini 个人配额', spBtn('登录 Google 账号', 'primary')) +
-        spRow('代理设置', '用于 Gemini API 请求的 HTTP/HTTPS 代理', '<input class="sp-select" style="width:200px;" placeholder="http://127.0.0.1:7890">')) +
-      spSec('项目配置',
-        spRow('GOOGLE_CLOUD_PROJECT', 'Google Cloud 项目 ID（可选，用于 Vertex AI）', '<input class="sp-select" style="width:200px;" placeholder="my-project-id">') +
-        spRow('YOLO 模式（自动放行）', '跳过所有操作确认，自动允许文件修改和命令执行', spToggle(false)));
-    },
     '模型平台': function() {
       return spSec('已添加平台',
         '<div class="sp-row" style="border-bottom:1px solid var(--border-light); padding-bottom:16px;"><div style="display:flex; align-items:center; gap:10px;"><div style="width:28px; height:28px; border-radius:6px; background:#10a37f; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700;">O</div><div><div class="sp-row-label">OpenAI</div><div class="sp-row-desc">GPT-4.1, o3, text-embedding-3</div></div></div><div class="sp-row-right"><span style="font-size:10px; color:var(--accent); background:var(--accent-light); padding:2px 8px; border-radius:4px;">3 模型可用</span>' + spBtn('编辑') + '</div></div>' +
@@ -4036,32 +4029,8 @@
         spAvRow(P+'ui-ux-pro-max.jpg', false, 'UI/UX 专业设计师', 'UI 界面与交互设计专家', spToggle(true) + spBtn('复制'))) +
       '<div class="sp-section"><div class="sp-section-title">助手编辑说明</div><div class="sp-card"><div style="font-size:12px; color:var(--text-muted); line-height:1.8; padding:8px 0;">每个助手可编辑：<br>· <b>名称 & 头像</b> — 自定义身份信息<br>· <b>描述</b> — 功能简述<br>· <b>主 Agent</b> — 绑定的执行引擎<br>· <b>系统提示词</b> — Markdown 格式的行为规则<br>· <b>可用模型</b> — 该助手可调用的模型列表<br>· <b>技能配置</b> — 启用/禁用技能</div></div></div>';
     },
-    'Agent 设置': function() {
-      var L = '../../src/renderer/assets/logos/ai-major/';
-      return spSec('本地 Agent（自动检测）',
-        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><img src="' + L + 'claude.svg" style="width:28px; height:28px; border-radius:50%; background:#f5f5f5; padding:4px;"><div><div class="sp-row-label">Claude Code</div><div class="sp-row-desc">/usr/local/bin/claude · ACP</div></div></div><div class="sp-row-right"><span style="font-size:10px; color:var(--accent); background:var(--accent-light); padding:2px 8px; border-radius:4px;">● 已连接</span></div></div>' +
-        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><img src="' + L + 'openai.svg" style="width:28px; height:28px; border-radius:50%; background:#f5f5f5; padding:4px;"><div><div class="sp-row-label">Codex</div><div class="sp-row-desc">/usr/local/bin/codex · ACP</div></div></div><div class="sp-row-right"><span style="font-size:10px; color:var(--accent); background:var(--accent-light); padding:2px 8px; border-radius:4px;">● 已连接</span></div></div>') +
-      spSec('自定义 Agent',
-        spRow('显示名称', '在助手列表中显示的名称', '<input class="sp-select" style="width:180px;" placeholder="My Agent">') +
-        spRow('命令', 'Agent 可执行文件路径', '<input class="sp-select" style="width:180px;" placeholder="/path/to/agent">') +
-        spRow('参数', '启动参数', '<input class="sp-select" style="width:180px;" placeholder="--flag value">') +
-        spRow('环境变量', '以 KEY=VALUE 格式配置', '<input class="sp-select" style="width:180px;" placeholder="API_KEY=xxx">') +
-        '<div style="display:flex; gap:8px; padding:12px 0;">' + spBtn('测试连接') + spBtn('添加', 'primary') + '</div>') +
-      spSec('远程 Agent',
-        spRow('名称', '远程 Agent 显示名', '<input class="sp-select" style="width:180px;" placeholder="Remote Agent">') +
-        spRow('URL', 'Agent 服务端点', '<input class="sp-select" style="width:180px;" placeholder="https://agent.example.com">') +
-        spRow('认证方式', '访问凭证', spSel(['无','Bearer Token'], '无')) +
-        spRow('允许不安全连接', '跳过 TLS 证书验证（自签名证书）', spToggle(false)) +
-        '<div style="display:flex; gap:8px; padding:12px 0;">' + spBtn('测试连接') + spBtn('添加', 'primary') + '</div>');
-    },
-    '功能扩展': function() {
-      return spSec('技能（Skills）',
-        spRow('网页搜索', '搜索引擎集成', spToggle(true)) +
-        spRow('文件操作', '读写、创建、删除文件', spToggle(true)) +
-        spRow('代码执行', '终端命令和脚本运行', spToggle(true)) +
-        spRow('图像生成', '调用 DALL-E / Stable Diffusion 生成图片', spToggle(false)) +
-        '<div style="display:flex; gap:8px; padding:12px 0;">' + spBtn('＋ 导入自定义技能', 'primary') + '</div>') +
-      spSec('MCP 服务器',
+    '工具': function() {
+      return spSec('MCP 服务器',
         '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">filesystem</div><div class="sp-row-desc">本地文件系统读写 · 3 个工具</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
         '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">browser</div><div class="sp-row-desc">网页抓取与浏览 · 5 个工具</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
         '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:#bbb; flex-shrink:0;"></div><div><div class="sp-row-label">memory</div><div class="sp-row-desc">已断开 · 2 个工具</div></div></div><div class="sp-row-right">' + spToggle(false) + spBtn('编辑') + '</div></div>' +
@@ -4071,6 +4040,22 @@
         spRow('语音服务商', '选择语音识别引擎', spSel(['OpenAI Whisper','Deepgram Nova-2'], 'OpenAI Whisper')) +
         spRow('API Key', '语音服务的认证密钥', '<input class="sp-select" style="width:180px;" type="password" placeholder="sk-...">') +
         spRow('默认语言', '语音识别的默认语言', spSel(['自动检测','中文','English','日本語'], '自动检测')));
+    },
+    '技能': function() {
+      return spSec('内置技能',
+        spRow('officecli', 'Office 文档读写（.docx / .xlsx / .pptx）', spToggle(true)) +
+        spRow('cron', '定时任务管理，自动执行操作', spToggle(true)) +
+        spRow('skill-creator', '引导创建自定义技能', spToggle(true)) +
+        spRow('aionui-skills', 'AionUI Skills 注册表，发现和下载技能', spToggle(true))) +
+      spSec('可选技能',
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">officecli-pptx</div><div class="sp-row-desc">创建、编辑 PPT 演示文稿</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">officecli-docx</div><div class="sp-row-desc">创建、编辑 Word 文档</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">officecli-xlsx</div><div class="sp-row-desc">创建、编辑 Excel 表格</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">morph-ppt</div><div class="sp-row-desc">Morph 动画 PPT 生成</div></div></div><div class="sp-row-right">' + spToggle(true) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0;"></div><div><div class="sp-row-label">mermaid</div><div class="sp-row-desc">渲染 Mermaid 图表为 SVG</div></div></div><div class="sp-row-right">' + spToggle(false) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:#bbb; flex-shrink:0;"></div><div><div class="sp-row-label">pdf</div><div class="sp-row-desc">PDF 提取、创建、合并拆分</div></div></div><div class="sp-row-right">' + spToggle(false) + spBtn('编辑') + '</div></div>' +
+        '<div class="sp-row"><div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:#bbb; flex-shrink:0;"></div><div><div class="sp-row-label">story-roleplay</div><div class="sp-row-desc">角色卡片与世界观文件解析</div></div></div><div class="sp-row-right">' + spToggle(false) + spBtn('编辑') + '</div></div>' +
+        '<div style="display:flex; gap:8px; padding:12px 0;">' + spBtn('＋ 导入自定义技能', 'primary') + '</div>');
     },
     '显示与主题': function() {
       return spSec('外观',
