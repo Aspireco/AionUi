@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { prepareAionuiBackend } = require('../packages/shared-scripts/src/prepare-aionui-backend.js');
-const { prepareBundledBun } = require('../packages/shared-scripts/src/prepare-bundled-bun.js');
+// prepareBundledBun retired: backend now ships its own bun runtime.
+// See handoff for full cleanup TODO.
 
 const projectRoot = path.resolve(__dirname, '..');
 const platform = process.env.PACK_PLATFORM || process.platform;
@@ -32,9 +33,7 @@ prepareAionuiBackend({
   allowMissing: process.env.AIONUI_BACKEND_ALLOW_MISSING === '1',
 });
 
-// 2. Prepare bundled-bun
-console.log('2. Preparing bundled-bun...');
-prepareBundledBun({ projectRoot, platform, arch });
+// 2. bundled-bun step skipped — backend ships its own bun runtime.
 
 // 3. Build web-cli TypeScript
 console.log('3. Building web-cli...');
@@ -70,17 +69,7 @@ const backendDest = path.join(tarballContentDir, 'bundled-aionui-backend', `${pl
 fs.mkdirSync(path.dirname(backendDest), { recursive: true });
 fs.cpSync(backendSrc, backendDest, { recursive: true });
 
-// Copy bundled-bun
-const bunSrc = path.join(
-  projectRoot,
-  'resources/bundled-bun',
-  `${platform}-${arch}`,
-  platform === 'win32' ? 'bun.exe' : 'bun'
-);
-const bunDest = path.join(tarballContentDir, 'bundled-bun', platform === 'win32' ? 'bun.exe' : 'bun');
-fs.mkdirSync(path.dirname(bunDest), { recursive: true });
-fs.copyFileSync(bunSrc, bunDest);
-fs.chmodSync(bunDest, 0o755);
+// bundled-bun no longer copied — backend ships its own bun runtime.
 
 // Copy static files
 if (fs.existsSync(staticDir)) {
