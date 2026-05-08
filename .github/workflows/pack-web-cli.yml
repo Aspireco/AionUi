@@ -62,8 +62,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build desktop renderer (for static files)
-        run: bunx electron-vite build
-        working-directory: packages/desktop
+        run: bunx electron-vite build --config packages/desktop/electron.vite.config.ts
 
       - name: Set up QEMU (Linux ARM64 only)
         if: matrix.platform == 'linux' && matrix.arch == 'arm64'
