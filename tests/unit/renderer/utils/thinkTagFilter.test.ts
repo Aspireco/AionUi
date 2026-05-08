@@ -139,10 +139,7 @@ describe('thinkTagFilter', () => {
     });
 
     it('does not process arrays', () => {
-      const content = [
-        { content: 'A<think>x</think>' },
-        { content: 'B<think>y</think>' },
-      ];
+      const content = [{ content: 'A<think>x</think>' }, { content: 'B<think>y</think>' }];
       expect(filterMessageContent(content)).toEqual([
         { content: 'A<think>x</think>' }, // array items not filtered
         { content: 'B<think>y</think>' },
@@ -151,18 +148,12 @@ describe('thinkTagFilter', () => {
 
     it('only filters top-level content property', () => {
       const content = {
-        messages: [
-          { content: '<think>a</think>Text' },
-          { nested: { content: '<think>b</think>More' } },
-        ],
+        messages: [{ content: '<think>a</think>Text' }, { nested: { content: '<think>b</think>More' } }],
       };
       // filterMessageContent only filters the direct 'content' key
       // nested structures and arrays are not recursively processed
       expect(filterMessageContent(content)).toEqual({
-        messages: [
-          { content: '<think>a</think>Text' },
-          { nested: { content: '<think>b</think>More' } },
-        ],
+        messages: [{ content: '<think>a</think>Text' }, { nested: { content: '<think>b</think>More' } }],
       });
     });
 

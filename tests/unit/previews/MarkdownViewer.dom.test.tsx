@@ -45,11 +45,11 @@ vi.mock('@/renderer/utils/chat/latexDelimiters', () => ({
 }));
 
 vi.mock('@/renderer/pages/conversation/Preview/components/editors/MarkdownEditor', () => ({
-  default: () => <div data-testid="markdown-editor" />,
+  default: () => <div data-testid='markdown-editor' />,
 }));
 
 vi.mock('@/renderer/pages/conversation/Preview/components/renderers/SelectionToolbar', () => ({
-  default: () => <div data-testid="selection-toolbar" />,
+  default: () => <div data-testid='selection-toolbar' />,
 }));
 
 vi.mock('@/renderer/pages/conversation/Preview/hooks/useScrollSyncHelpers', () => ({
@@ -58,7 +58,7 @@ vi.mock('@/renderer/pages/conversation/Preview/hooks/useScrollSyncHelpers', () =
 }));
 
 vi.mock('@/renderer/components/Markdown/MermaidBlock', () => ({
-  default: () => <div data-testid="mermaid-block" />,
+  default: () => <div data-testid='mermaid-block' />,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -71,17 +71,17 @@ import MarkdownViewer from '@/renderer/pages/conversation/Preview/components/vie
 
 describe('MarkdownViewer', () => {
   it('renders markdown content in preview mode', () => {
-    render(<MarkdownViewer content="# Hello World" />);
+    render(<MarkdownViewer content='# Hello World' />);
     expect(screen.getByText('Hello World')).toBeInTheDocument();
   });
 
   it('renders MarkdownEditor in source mode', () => {
-    render(<MarkdownViewer content="# Test" viewMode="source" />);
+    render(<MarkdownViewer content='# Test' viewMode='source' />);
     expect(screen.getByTestId('markdown-editor')).toBeInTheDocument();
   });
 
   it('hides toolbar when hideToolbar is true', () => {
-    render(<MarkdownViewer content="# Test" hideToolbar />);
+    render(<MarkdownViewer content='# Test' hideToolbar />);
     expect(screen.queryByText('preview.preview')).not.toBeInTheDocument();
   });
 });

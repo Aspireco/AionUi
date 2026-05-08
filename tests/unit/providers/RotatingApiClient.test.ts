@@ -127,10 +127,7 @@ describe('RotatingApiClient', () => {
 
     it('retries on retryable error', async () => {
       const client = new TestRotatingApiClient('key', AuthType.USE_OPENAI, { maxRetries: 3 });
-      const operation = vi
-        .fn()
-        .mockRejectedValueOnce({ status: 429 })
-        .mockResolvedValue('success');
+      const operation = vi.fn().mockRejectedValueOnce({ status: 429 }).mockResolvedValue('success');
 
       const result = await client.executeWithRetry(operation);
 

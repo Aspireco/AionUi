@@ -67,9 +67,7 @@ describe('base64 utils', () => {
     it('contains expected Office document MIME types', () => {
       expect(BINARY_MIME_MAP.xlsx).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       expect(BINARY_MIME_MAP.docx).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      expect(BINARY_MIME_MAP.pptx).toBe(
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      );
+      expect(BINARY_MIME_MAP.pptx).toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation');
     });
 
     it('contains legacy Office MIME types', () => {

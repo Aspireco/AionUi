@@ -209,6 +209,7 @@ export function resetMockHttpBridge(mock: MockHttpBridge): void;
 ```
 
 **N4 使用约束**:
+
 - 推荐:`const mock = createMockHttpBridge({ unmatched: 'warn' }); vi.mock('@/common/adapter/httpBridge', () => mock.asModule())` —— **但注意 vi.mock hoist 限制**:不能在工厂内引用外部 const,也不能用 async factory + dynamic import(会导致 worker fork 死锁,team-lead 已踩坑验证)。建议继续沿用手写 `vi.fn()` mock + 在测试体里实例化 `createMockHttpBridge` 做路由注册和 assertion。
 - 不得修改 `tests/unit/_helpers/mockHttpBridge.ts`;需要新能力 → escalate team-lead。
 

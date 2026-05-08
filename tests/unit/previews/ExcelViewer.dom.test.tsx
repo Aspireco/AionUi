@@ -13,7 +13,12 @@ import React from 'react';
 // Stub the underlying OfficeWatchViewer to avoid loading its ipcBridge / Arco chain.
 vi.mock('@/renderer/pages/conversation/Preview/components/viewers/OfficeWatchViewer', () => ({
   default: vi.fn(({ docType, file_path, workspace }: { docType: string; file_path?: string; workspace?: string }) =>
-    React.createElement('div', { 'data-testid': 'office-watch-stub', 'data-doctype': docType, 'data-path': file_path ?? '', 'data-workspace': workspace ?? '' })
+    React.createElement('div', {
+      'data-testid': 'office-watch-stub',
+      'data-doctype': docType,
+      'data-path': file_path ?? '',
+      'data-workspace': workspace ?? '',
+    })
   ),
 }));
 

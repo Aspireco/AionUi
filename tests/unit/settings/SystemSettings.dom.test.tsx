@@ -16,16 +16,16 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@/renderer/components/settings/SettingsModal/contents/SystemModalContent', () => ({
-  default: () => <div data-testid="system-modal-content">SystemModalContent</div>,
+  default: () => <div data-testid='system-modal-content'>SystemModalContent</div>,
 }));
 
 vi.mock('@/renderer/components/settings/SettingsModal/contents/AboutModalContent', () => ({
-  default: () => <div data-testid="about-modal-content">AboutModalContent</div>,
+  default: () => <div data-testid='about-modal-content'>AboutModalContent</div>,
 }));
 
 vi.mock('@/renderer/pages/settings/components/SettingsPageWrapper', () => ({
   default: ({ children, contentClassName }: { children: React.ReactNode; contentClassName?: string }) => (
-    <div data-testid="settings-page-wrapper" {...(contentClassName ? { 'data-content-class': contentClassName } : {})}>
+    <div data-testid='settings-page-wrapper' {...(contentClassName ? { 'data-content-class': contentClassName } : {})}>
       {children}
     </div>
   ),

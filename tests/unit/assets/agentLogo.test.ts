@@ -5,7 +5,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAgentLogo, resolveAgentLogo, hasAgentLogo, isDefaultModel, getModelDisplayLabel } from '@/renderer/utils/model/agentLogo';
+import {
+  getAgentLogo,
+  resolveAgentLogo,
+  hasAgentLogo,
+  isDefaultModel,
+  getModelDisplayLabel,
+} from '@/renderer/utils/model/agentLogo';
 
 vi.mock('@/renderer/utils/platform', () => ({
   resolveBackendAssetUrl: (url: string) => url,

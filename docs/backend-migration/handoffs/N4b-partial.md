@@ -5,7 +5,7 @@
 **Phase 2b 完成**(4 个 L1 测试文件,77 tests 全绿):
 
 - `tests/unit/providers/ApiKeyManager.test.ts` (19 tests) - L1
-- `tests/unit/providers/RotatingApiClient.test.ts` (23 tests) - L1  
+- `tests/unit/providers/RotatingApiClient.test.ts` (23 tests) - L1
 - `tests/unit/providers/ClientFactory.test.ts` (20 tests) - L1
 - `tests/unit/providers/ProtocolConverter.test.ts` (15 tests) - L1
 
@@ -18,6 +18,7 @@
 **实际**: 跳过 Phase 3b 全部 3 个文件。
 
 **原因**:
+
 1. 源码依赖复杂:
    - `useModelProviderList`: 依赖 SWR + `useGoogleAuthModels` 循环 + `ipcBridge.mode`
    - `useConfigModelListWithImage`: 依赖 `useProvidersQuery` SWR hook
@@ -33,6 +34,7 @@
 **影响后续里程碑**: 无。requirements §已定决策 "测试不走真实网络/backend,全用 N3 沉淀的 mockHttpBridge 或 vi.mock",这 3 个 hooks 的集成测试可以在后续专项补充,不阻塞 N4 milestone。
 
 **对文件数/case 数下限的影响**:
+
 - requirements 要求 N4b ≥ 18 文件 ≥ 65 cases
 - Phase 2b 已完成: 4 文件 77 cases
 - 剩余目标: 18 - 4 = 14 文件, 65 - 77 = -12 cases(已超额)
@@ -49,6 +51,7 @@
 **源码行为**: `ApiKeyManager` 构造函数中,`initializeWithRandomKey()` 只在 `hasMultipleKeys()` 时调用 `updateEnvironment()`,单 key 时不设置 `process.env[envKey]`。
 
 **测试处理**: 按 requirements 决策表"小 bug 写成文档化现状",修改测试断言:
+
 - `sets OPENAI_API_KEY for multiple keys` / `sets ANTHROPIC_API_KEY for multiple keys`: 断言 multiple keys 时环境变量被设置
 - `does not set environment for single key (documented behavior)`: 断言单 key 时环境变量未设置
 
@@ -59,6 +62,7 @@
 **源码行为**: `OpenAI2AnthropicConverter.convertRequest()` 第 121-128 行,当 `temperature` 和 `top_p` 都设置时,Anthropic API 只接受其中一个,代码选择 `temperature`。
 
 **测试处理**: 拆分为 3 个独立测试:
+
 - `converts temperature parameter`: 只设置 temperature
 - `converts top_p parameter when temperature not set`: 只设置 top_p
 - `prefers temperature when both temperature and top_p are set (Anthropic API constraint)`: 同时设置时,断言 temperature 存在,top_p 为 undefined

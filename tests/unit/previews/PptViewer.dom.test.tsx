@@ -10,7 +10,7 @@ import React from 'react';
 
 vi.mock('@/renderer/pages/conversation/Preview/components/viewers/OfficeWatchViewer', () => ({
   default: ({ docType, file_path }: { docType: string; file_path?: string }) => (
-    <div data-testid="office-watch-viewer" data-doctype={docType} data-filepath={file_path} />
+    <div data-testid='office-watch-viewer' data-doctype={docType} data-filepath={file_path} />
   ),
 }));
 
@@ -18,13 +18,13 @@ import PptViewer from '@/renderer/pages/conversation/Preview/components/viewers/
 
 describe('PptViewer', () => {
   it('renders OfficeWatchViewer with docType ppt', () => {
-    const { getByTestId } = render(<PptViewer file_path="/test.pptx" />);
+    const { getByTestId } = render(<PptViewer file_path='/test.pptx' />);
     const viewer = getByTestId('office-watch-viewer');
     expect(viewer.getAttribute('data-doctype')).toBe('ppt');
   });
 
   it('forwards file_path prop to OfficeWatchViewer', () => {
-    const { getByTestId } = render(<PptViewer file_path="/slides/deck.pptx" />);
+    const { getByTestId } = render(<PptViewer file_path='/slides/deck.pptx' />);
     const viewer = getByTestId('office-watch-viewer');
     expect(viewer.getAttribute('data-filepath')).toBe('/slides/deck.pptx');
   });

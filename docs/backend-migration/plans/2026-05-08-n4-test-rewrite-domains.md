@@ -41,11 +41,11 @@
 
 ### 1.1 三分区划分
 
-| 分区     | 目录                                       | 文件数                         | 源码领域                           |
-| -------- | ------------------------------------------ | ------------------------------ | ---------------------------------- |
-| **N4a**  | `tests/unit/{assistants,skills,extension}` | 12 + 4 + 3 = **19**            | assistants / skills / extension    |
-| **N4b**  | `tests/unit/{providers,system,cron}`       | 8 + 3 + 7 = **18**             | providers / system / cron          |
-| **N4c**  | `tests/unit/{previews,assets,bootstrap}`   | 12 + 2 + 3 = **17**            | file preview / assets / bootstrap  |
+| 分区    | 目录                                       | 文件数              | 源码领域                          |
+| ------- | ------------------------------------------ | ------------------- | --------------------------------- |
+| **N4a** | `tests/unit/{assistants,skills,extension}` | 12 + 4 + 3 = **19** | assistants / skills / extension   |
+| **N4b** | `tests/unit/{providers,system,cron}`       | 8 + 3 + 7 = **18**  | providers / system / cron         |
+| **N4c** | `tests/unit/{previews,assets,bootstrap}`   | 12 + 2 + 3 = **17** | file preview / assets / bootstrap |
 
 三分区"零目录重叠":任何 executor 只能 touch 自己分区的目录;公共 helper 只读。
 
@@ -58,11 +58,11 @@
 
 ### 1.3 预计执行时间
 
-| 模式                         | 预计时间       |
-| ---------------------------- | -------------- |
-| 单 executor 顺序(A→B→C)     | 7-10 天        |
-| 三 executor 并行(独立目录)   | **3-4 天**(实时)   |
-| 每个分区独立执行时间         | 2-4 天         |
+| 模式                       | 预计时间         |
+| -------------------------- | ---------------- |
+| 单 executor 顺序(A→B→C)    | 7-10 天          |
+| 三 executor 并行(独立目录) | **3-4 天**(实时) |
+| 每个分区独立执行时间       | 2-4 天           |
 
 ---
 
@@ -73,11 +73,7 @@
 从 N3 handoff 锁定的签名里,N4 testfile 中**只用以下 API**:
 
 ```ts
-import {
-  createMockHttpBridge,
-  resetMockHttpBridge,
-  type MockHttpBridge,
-} from '../_helpers/mockHttpBridge';
+import { createMockHttpBridge, resetMockHttpBridge, type MockHttpBridge } from '../_helpers/mockHttpBridge';
 // 相对路径按各分区深度调整:
 //   tests/unit/assistants/x.test.ts    → '../_helpers/mockHttpBridge'
 //   tests/unit/providers/x.test.ts     → '../_helpers/mockHttpBridge'
@@ -99,7 +95,7 @@ import {
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
-import { /* 被测 */ } from '@/path/to/module';
+import {} from /* 被测 */ '@/path/to/module';
 
 describe('moduleUnderTest', () => {
   beforeEach(() => {
@@ -134,17 +130,20 @@ vi.mock('@/common/adapter/httpBridge', () => ({
   httpRequest: vi.fn(),
   getBaseUrl: vi.fn(() => ''),
   BackendHttpError: class BackendHttpError extends Error {
-    constructor(public status: number, public code: string, message: string) {
+    constructor(
+      public status: number,
+      public code: string,
+      message: string
+    ) {
       super(message);
       this.name = 'BackendHttpError';
     }
   },
-  isBackendHttpError: (e: unknown): boolean =>
-    e instanceof Error && e.name === 'BackendHttpError',
+  isBackendHttpError: (e: unknown): boolean => e instanceof Error && e.name === 'BackendHttpError',
 }));
 
 // 然后 import 被测 + helper
-import { /* 被测 */ } from '@/path/to/module';
+import {} from /* 被测 */ '@/path/to/module';
 import * as httpBridge from '@/common/adapter/httpBridge';
 
 describe('moduleUnderTest', () => {
@@ -217,24 +216,28 @@ mock.emit('cron.onJobCreated', { id: 'j1', ... });
 ```ts
 // ❌ 不行:vi.mock 工厂引用外部 const
 const mock = createMockHttpBridge();
-vi.mock('@/common/adapter/httpBridge', () => mock.asModule());  // 死
+vi.mock('@/common/adapter/httpBridge', () => mock.asModule()); // 死
 
 // ❌ 不行:async factory + dynamic import
 vi.mock('@/common/adapter/httpBridge', async () => {
   const m = createMockHttpBridge();
   return m.asModule();
-});  // worker fork 死锁
+}); // worker fork 死锁
 
 // ❌ 不行:vi.hoisted + require
 const { mock } = vi.hoisted(() => {
   return { mock: require('../_helpers/mockHttpBridge').createMockHttpBridge() };
-});  // MODULE_NOT_FOUND
+}); // MODULE_NOT_FOUND
 
 // ❌ 不行:restoreAllMocks() — 会移除 vi.mock,后续测试炸
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 // ✅ 应该:
-afterEach(() => { vi.clearAllMocks(); });
+afterEach(() => {
+  vi.clearAllMocks();
+});
 // 或靠 beforeEach 重建,啥都不加
 ```
 
@@ -244,15 +247,16 @@ afterEach(() => { vi.clearAllMocks(); });
 
 executor 在 Phase 0 / 9 会用到以下来自 N3-outcome 的字段:
 
-| N3 handoff 字段                                          | 本 plan 用在哪                       | 值                                                          |
-| -------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| 上游分支名                                               | Phase 1 步骤 1.1 checkout            | `feat/n3-test-rewrite-adapter-common`                       |
-| 上游 SHA                                                 | Phase 1 步骤 1.1                     | `df071f82a` (最新 handoff commit) 或 `349769374`(前一个)  |
-| 基线分支 / SHA                                           | Phase 9 步骤 9.1                     | `origin/feat/backend-migration @ e4cdff41f`                 |
-| mockHttpBridge 签名锁                                    | §2 本 plan + 每个 testfile 的 import | 见 N3 handoff §"mockHttpBridge 最终公开签名"                |
-| N3 测试通过数量(基线)                                   | Phase 0 快照                         | 88 tests / 6 test files(N4 后 ≥ 88 + 180 = 268 / ≥ 60 files) |
+| N3 handoff 字段       | 本 plan 用在哪                       | 值                                                           |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------ |
+| 上游分支名            | Phase 1 步骤 1.1 checkout            | `feat/n3-test-rewrite-adapter-common`                        |
+| 上游 SHA              | Phase 1 步骤 1.1                     | `df071f82a` (最新 handoff commit) 或 `349769374`(前一个)     |
+| 基线分支 / SHA        | Phase 9 步骤 9.1                     | `origin/feat/backend-migration @ e4cdff41f`                  |
+| mockHttpBridge 签名锁 | §2 本 plan + 每个 testfile 的 import | 见 N3 handoff §"mockHttpBridge 最终公开签名"                 |
+| N3 测试通过数量(基线) | Phase 0 快照                         | 88 tests / 6 test files(N4 后 ≥ 88 + 180 = 268 / ≥ 60 files) |
 
 **N3 遗留已记入 plan 的要点**:
+
 - vitest 4 worker fork 下 vi.mock + asModule 陷阱(见 §2.4)
 - executor-n3 曾 idle 未执行 Phase 8+ → N4 plan 每 Phase 末尾都写 NEXT STEP(见 §14)
 
@@ -269,13 +273,13 @@ executor 在 Phase 0 / 9 会用到以下来自 N3-outcome 的字段:
 
 ### 4.2 冲突处理
 
-| 场景                                     | 处理                                                                                                       |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| rebase 无冲突                            | `git push`(正常)                                                                                          |
-| rebase 冲突在**自己分区的文件**          | 不可能(分区零重叠,若发生一定是自己或对方越界);**STOP** → SendMessage escalate team-lead                 |
-| rebase 冲突在 `tests/unit/_helpers/`     | 不可能(N4 禁止改 helper);若发生 → escalate                                                               |
+| 场景                                              | 处理                                                                                            |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| rebase 无冲突                                     | `git push`(正常)                                                                                |
+| rebase 冲突在**自己分区的文件**                   | 不可能(分区零重叠,若发生一定是自己或对方越界);**STOP** → SendMessage escalate team-lead         |
+| rebase 冲突在 `tests/unit/_helpers/`              | 不可能(N4 禁止改 helper);若发生 → escalate                                                      |
 | rebase 冲突在 `package.json` / `vitest.config.ts` | 不可能(N4 禁止改这些文件);若发生 → escalate                                                     |
-| push 被拒 `non-fast-forward`             | 说明远端有别人的新 commit → `git pull --rebase` 再 push;≥ 3 次循环都被新 commit 夺先 → escalate           |
+| push 被拒 `non-fast-forward`                      | 说明远端有别人的新 commit → `git pull --rebase` 再 push;≥ 3 次循环都被新 commit 夺先 → escalate |
 
 ### 4.3 每路 executor 的启动判定
 
@@ -394,6 +398,7 @@ cat /tmp/n4-baseline/dir-counts.txt
 ```
 
 **判定**:
+
 - vitest 必须绿(N3 已 sign off)
 - 目录存在且可写
 
@@ -475,9 +480,9 @@ for d in previews assets bootstrap; do test -d "tests/unit/$d" || { echo "MISSIN
 
 #### 2a.1 文件清单
 
-| #  | 路径                                                          | 被测                                                            | case 数 | 层次 |
-| -- | ------------------------------------------------------------- | --------------------------------------------------------------- | ------- | ---- |
-| A5 | `tests/unit/assistants/assistantUtils.test.ts`                | `renderer/pages/settings/AssistantSettings/assistantUtils.ts`   | ≥ 5     | L1   |
+| #   | 路径                                           | 被测                                                          | case 数 | 层次 |
+| --- | ---------------------------------------------- | ------------------------------------------------------------- | ------- | ---- |
+| A5  | `tests/unit/assistants/assistantUtils.test.ts` | `renderer/pages/settings/AssistantSettings/assistantUtils.ts` | ≥ 5     | L1   |
 
 #### 2a.2 断言清单(最少 5 case)
 
@@ -508,6 +513,7 @@ echo "exit=$?"
 ```
 
 **失败诊断**:
+
 - `Cannot find module '@/renderer/pages/settings/AssistantSettings/assistantUtils'` → 源码文件名或路径拼错,用 `find packages/desktop -name "assistantUtils*"` 核对。
 - 断言数不对 → 检查是否源码的函数行为与你写的断言不一致;**小 bug 按 requirements 决策表写成"文档化现状"** + 在 handoff Deviations 记录。
 
@@ -529,12 +535,12 @@ null/undefined guard paths (L1 pure function suite, no mock)."
 
 #### 3a.1 文件清单
 
-| #  | 路径                                                    | 被测                                             | case 数 | 层次 |
-| -- | ------------------------------------------------------- | ------------------------------------------------ | ------- | ---- |
-| A1 | `tests/unit/assistants/useAssistantList.dom.test.ts`    | `renderer/hooks/assistant/useAssistantList.ts`   | ≥ 3     | L2   |
-| A2 | `tests/unit/assistants/useAssistantEditor.dom.test.ts`  | `renderer/hooks/assistant/useAssistantEditor.ts` | ≥ 3     | L2   |
-| A3 | `tests/unit/assistants/useAssistantSkills.dom.test.ts`  | `renderer/hooks/assistant/useAssistantSkills.ts` | ≥ 3     | L2   |
-| A4 | `tests/unit/assistants/useDetectedAgents.dom.test.ts`   | `renderer/hooks/assistant/useDetectedAgents.ts`  | ≥ 3     | L2   |
+| #   | 路径                                                   | 被测                                             | case 数 | 层次 |
+| --- | ------------------------------------------------------ | ------------------------------------------------ | ------- | ---- |
+| A1  | `tests/unit/assistants/useAssistantList.dom.test.ts`   | `renderer/hooks/assistant/useAssistantList.ts`   | ≥ 3     | L2   |
+| A2  | `tests/unit/assistants/useAssistantEditor.dom.test.ts` | `renderer/hooks/assistant/useAssistantEditor.ts` | ≥ 3     | L2   |
+| A3  | `tests/unit/assistants/useAssistantSkills.dom.test.ts` | `renderer/hooks/assistant/useAssistantSkills.ts` | ≥ 3     | L2   |
+| A4  | `tests/unit/assistants/useDetectedAgents.dom.test.ts`  | `renderer/hooks/assistant/useDetectedAgents.ts`  | ≥ 3     | L2   |
 
 #### 3a.2 公共 mock 模板
 
@@ -547,15 +553,15 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 vi.mock('@/common', () => ({
   ipcBridge: {
     assistants: {
-      list:   { invoke: vi.fn(), provider: vi.fn() },
-      get:    { invoke: vi.fn(), provider: vi.fn() },
+      list: { invoke: vi.fn(), provider: vi.fn() },
+      get: { invoke: vi.fn(), provider: vi.fn() },
       create: { invoke: vi.fn(), provider: vi.fn() },
       update: { invoke: vi.fn(), provider: vi.fn() },
       delete: { invoke: vi.fn(), provider: vi.fn() },
       // 按源码实际用到的 method 扩
     },
     skills: {
-      list:   { invoke: vi.fn(), provider: vi.fn() },
+      list: { invoke: vi.fn(), provider: vi.fn() },
       // ...
     },
   },
@@ -581,6 +587,7 @@ vi.mock('react-i18next', () => ({
 #### 3a.4 A2 - useAssistantEditor(最少 3 case,推荐 5-7;文件 15KB 较大,分 describe)
 
 读源码用 `Read` 工具定内部方法:
+
 - 构造初始表单 state
 - 编辑单字段 → 脏标记
 - save → 调用 `ipcBridge.assistants.update.invoke` + 返回更新对象
@@ -604,6 +611,7 @@ echo "exit=$?"
 ```
 
 **失败诊断**:
+
 - `renderHook is not a function` → 缺 `@testing-library/react` 包;`bun install` 核验。
 - hook 内调用 `await ipcBridge.x.invoke()` 但测试 未 await → 用 `await waitFor(() => expect(...).toHaveBeenCalled())`。
 - fake timers + async 挂起 → `await vi.advanceTimersByTimeAsync(ms)` 而非同步版本。
@@ -627,13 +635,13 @@ detection logic via ipcBridge mocks."
 
 #### 4a.1 文件清单(L3 组件,case 数 ≥ 5 每文件)
 
-| #   | 路径                                                      | 被测                                | case 数 |
-| --- | --------------------------------------------------------- | ----------------------------------- | ------- |
-| A6  | `tests/unit/assistants/AssistantListPanel.dom.test.tsx`   | `AssistantListPanel.tsx`            | ≥ 5     |
-| A7  | `tests/unit/assistants/AssistantEditDrawer.dom.test.tsx`  | `AssistantEditDrawer.tsx`           | ≥ 5     |
-| A8  | `tests/unit/assistants/DeleteAssistantModal.dom.test.tsx` | `DeleteAssistantModal.tsx`          | ≥ 5     |
-| A9  | `tests/unit/assistants/AddSkillsModal.dom.test.tsx`       | `AddSkillsModal.tsx`                | ≥ 5     |
-| A10 | `tests/unit/assistants/SkillConfirmModals.dom.test.tsx`   | `SkillConfirmModals.tsx`            | ≥ 5     |
+| #   | 路径                                                      | 被测                       | case 数 |
+| --- | --------------------------------------------------------- | -------------------------- | ------- |
+| A6  | `tests/unit/assistants/AssistantListPanel.dom.test.tsx`   | `AssistantListPanel.tsx`   | ≥ 5     |
+| A7  | `tests/unit/assistants/AssistantEditDrawer.dom.test.tsx`  | `AssistantEditDrawer.tsx`  | ≥ 5     |
+| A8  | `tests/unit/assistants/DeleteAssistantModal.dom.test.tsx` | `DeleteAssistantModal.tsx` | ≥ 5     |
+| A9  | `tests/unit/assistants/AddSkillsModal.dom.test.tsx`       | `AddSkillsModal.tsx`       | ≥ 5     |
+| A10 | `tests/unit/assistants/SkillConfirmModals.dom.test.tsx`   | `SkillConfirmModals.tsx`   | ≥ 5     |
 
 #### 4a.2 L3 组件测试通用模板
 
@@ -698,6 +706,7 @@ echo "exit=$?"
 ```
 
 **失败诊断**:
+
 - "unable to find ... with Name 'xxx'" → Arco component 用 `data-testid` 或更宽松的 text match
 - "Not wrapped in act(...)" → 用 `await user.click()`,不要 fireEvent
 - 组件依赖 `<ConfigProvider locale={...}>` → 测试中包一层
@@ -721,20 +730,22 @@ SkillConfirmModals multi-modal dialogs via userEvent + ipcBridge mocks."
 
 #### 5a.1 文件清单
 
-| #   | 路径                                                   | 被测                                    | case 数 |
-| --- | ------------------------------------------------------ | --------------------------------------- | ------- |
-| A11 | `tests/unit/assistants/migrateAssistants.test.ts`      | `process/utils/migrateAssistants.ts`    | ≥ 5     |
-| A12 | `tests/unit/assistants/runBackendMigrations.test.ts`   | `process/utils/runBackendMigrations.ts` | ≥ 5     |
+| #   | 路径                                                 | 被测                                    | case 数 |
+| --- | ---------------------------------------------------- | --------------------------------------- | ------- |
+| A11 | `tests/unit/assistants/migrateAssistants.test.ts`    | `process/utils/migrateAssistants.ts`    | ≥ 5     |
+| A12 | `tests/unit/assistants/runBackendMigrations.test.ts` | `process/utils/runBackendMigrations.ts` | ≥ 5     |
 
 #### 5a.2 A11 mock 策略
 
 源码 `migrateAssistants.ts` import:
+
 - `@/common` 的 `ipcBridge`(调 backend `/api/assistants/*`)
 - `./initStorage` 的 `ProcessConfig`(本地 config file)
 
 用模板 C mock `ipcBridge.assistants.*`;`initStorage.ProcessConfig` mock 为 `{ get: vi.fn(), set: vi.fn(), remove: vi.fn() }`。
 
 断言点(最少 5):
+
 - 空输入 → 不调 `createAssistant` invoke
 - legacy assistant 被 migrate → `createAssistant` 调 1 次,body snake_case 正确
 - built-in ID 被跳过(不发 create)
@@ -744,12 +755,14 @@ SkillConfirmModals multi-modal dialogs via userEvent + ipcBridge mocks."
 #### 5a.3 A12 mock 策略
 
 源码 `runBackendMigrations.ts` import:
+
 - `@/common/config/configMigration`(`migrateConfigStorage`, `migrateProviders`)
 - `@/common/adapter/httpBridge`(`httpRequest`)
 - `./initStorage.ProcessConfig`
 - `./migrateAssistants.migrateAssistantsToBackend`
 
 mock 策略:
+
 ```ts
 vi.mock('@/common/config/configMigration', () => ({
   migrateConfigStorage: vi.fn(),
@@ -761,6 +774,7 @@ vi.mock('./migrateAssistants', () => ({ migrateAssistantsToBackend: vi.fn() }));
 ```
 
 断言点(最少 5):
+
 - 全部成功 → orchestrator 返回 `allSucceeded: true`
 - `migrateConfigStorage` 挂但其它成功 → `allSucceeded: false`;但其它 migration 仍跑
 - `migrateProviders` 挂 → 同上
@@ -794,12 +808,12 @@ orchestrator ordering + partial-failure allSucceeded flag."
 
 #### 6a.1 文件清单
 
-| #   | 路径                                                          | 被测                                                                                      | case 数 |
-| --- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------- |
-| SK1 | `tests/unit/skills/skillSuggestParser.test.ts`                | `renderer/utils/chat/skillSuggestParser.ts`                                               | ≥ 5     |
-| SK2 | `tests/unit/skills/AddCustomPathModal.dom.test.tsx`           | `renderer/pages/settings/AssistantSettings/AddCustomPathModal.tsx`                        | ≥ 5     |
+| #   | 路径                                                          | 被测                                                                                       | case 数 |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------- |
+| SK1 | `tests/unit/skills/skillSuggestParser.test.ts`                | `renderer/utils/chat/skillSuggestParser.ts`                                                | ≥ 5     |
+| SK2 | `tests/unit/skills/AddCustomPathModal.dom.test.tsx`           | `renderer/pages/settings/AssistantSettings/AddCustomPathModal.tsx`                         | ≥ 5     |
 | SK3 | `tests/unit/skills/useAssistantSkillsIntegration.dom.test.ts` | `useAssistantSkills` + `AddSkillsModal` 组合(用 `createMockHttpBridge` 拉 skill detection) | ≥ 3     |
-| SK4 | `tests/unit/skills/SkillsHubSettings.dom.test.tsx`            | `renderer/pages/settings/SkillsHubSettings.tsx`                                           | ≥ 5     |
+| SK4 | `tests/unit/skills/SkillsHubSettings.dom.test.tsx`            | `renderer/pages/settings/SkillsHubSettings.tsx`                                            | ≥ 5     |
 
 #### 6a.2 删除 skills/.gitkeep + 写测试
 
@@ -836,11 +850,11 @@ validation (L3), useAssistantSkills integration via mockHttpBridge
 
 #### 7a.1 文件清单
 
-| #  | 路径                                                             | 被测                                                                               | case 数 |
-| -- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------- |
-| E1 | `tests/unit/extension/ExtensionSettingsPage.dom.test.tsx`        | `renderer/pages/settings/ExtensionSettingsPage.tsx`                                | ≥ 5     |
-| E2 | `tests/unit/extension/ExtensionSettingsTabContent.dom.test.tsx`  | `renderer/components/settings/SettingsModal/contents/ExtensionSettingsTabContent.tsx` | ≥ 5  |
-| E3 | `tests/unit/extension/extensionMapperIntegration.test.ts`        | Extension ipcBridge 调用序列(mock `/api/extension/*`)                             | ≥ 5     |
+| #   | 路径                                                            | 被测                                                                                  | case 数 |
+| --- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------- |
+| E1  | `tests/unit/extension/ExtensionSettingsPage.dom.test.tsx`       | `renderer/pages/settings/ExtensionSettingsPage.tsx`                                   | ≥ 5     |
+| E2  | `tests/unit/extension/ExtensionSettingsTabContent.dom.test.tsx` | `renderer/components/settings/SettingsModal/contents/ExtensionSettingsTabContent.tsx` | ≥ 5     |
+| E3  | `tests/unit/extension/extensionMapperIntegration.test.ts`       | Extension ipcBridge 调用序列(mock `/api/extension/*`)                                 | ≥ 5     |
 
 #### 7a.2 实现提示
 
@@ -881,16 +895,17 @@ sequence + payload shape via mockHttpBridge (L4)."
 
 #### 2b.1 文件清单
 
-| #  | 路径                                               | 被测                                                                                   | case 数 |
-| -- | -------------------------------------------------- | -------------------------------------------------------------------------------------- | ------- |
-| P5 | `tests/unit/providers/RotatingApiClient.test.ts`   | `common/api/RotatingApiClient.ts` + `AnthropicRotatingClient` + `OpenAIRotatingClient` | ≥ 5     |
-| P6 | `tests/unit/providers/ApiKeyManager.test.ts`       | `common/api/ApiKeyManager.ts`                                                          | ≥ 5     |
-| P7 | `tests/unit/providers/ClientFactory.test.ts`       | `common/api/ClientFactory.ts`                                                          | ≥ 5     |
-| P8 | `tests/unit/providers/ProtocolConverter.test.ts`   | `common/api/ProtocolConverter.ts` + `OpenAI2AnthropicConverter.ts`                     | ≥ 5     |
+| #   | 路径                                             | 被测                                                                                   | case 数 |
+| --- | ------------------------------------------------ | -------------------------------------------------------------------------------------- | ------- |
+| P5  | `tests/unit/providers/RotatingApiClient.test.ts` | `common/api/RotatingApiClient.ts` + `AnthropicRotatingClient` + `OpenAIRotatingClient` | ≥ 5     |
+| P6  | `tests/unit/providers/ApiKeyManager.test.ts`     | `common/api/ApiKeyManager.ts`                                                          | ≥ 5     |
+| P7  | `tests/unit/providers/ClientFactory.test.ts`     | `common/api/ClientFactory.ts`                                                          | ≥ 5     |
+| P8  | `tests/unit/providers/ProtocolConverter.test.ts` | `common/api/ProtocolConverter.ts` + `OpenAI2AnthropicConverter.ts`                     | ≥ 5     |
 
 #### 2b.2 ApiKeyManager 断言要点(P6)
 
 源码提供 key rotation + 90s blacklist。测试点:
+
 - 构造函数 parseKeys(逗号分隔 / 空白 / 单 key)
 - `getCurrentKey()` 返回 index
 - `reportError(keyIndex)` 把 key blacklist 90s
@@ -937,11 +952,11 @@ and ProtocolConverter OpenAI↔Anthropic roundtrip."
 
 #### 3b.1 文件清单
 
-| #  | 路径                                                           | 被测                                                  | case 数 |
-| -- | -------------------------------------------------------------- | ----------------------------------------------------- | ------- |
-| P1 | `tests/unit/providers/useModelProviderList.dom.test.ts`        | `renderer/hooks/agent/useModelProviderList.ts`        | ≥ 3     |
-| P2 | `tests/unit/providers/useConfigModelListWithImage.dom.test.ts` | `renderer/hooks/agent/useConfigModelListWithImage.ts` | ≥ 3     |
-| P3 | `tests/unit/providers/useGoogleAuthModels.dom.test.ts`         | `renderer/hooks/agent/useGoogleAuthModels.ts`         | ≥ 3     |
+| #   | 路径                                                           | 被测                                                  | case 数 |
+| --- | -------------------------------------------------------------- | ----------------------------------------------------- | ------- |
+| P1  | `tests/unit/providers/useModelProviderList.dom.test.ts`        | `renderer/hooks/agent/useModelProviderList.ts`        | ≥ 3     |
+| P2  | `tests/unit/providers/useConfigModelListWithImage.dom.test.ts` | `renderer/hooks/agent/useConfigModelListWithImage.ts` | ≥ 3     |
+| P3  | `tests/unit/providers/useGoogleAuthModels.dom.test.ts`         | `renderer/hooks/agent/useGoogleAuthModels.ts`         | ≥ 3     |
 
 #### 3b.2 mock 策略
 
@@ -971,15 +986,18 @@ renderHook(() => useModelProviderList(), { wrapper });
 #### 3b.3 断言要点
 
 **P1 useModelProviderList**:
+
 - 初始化 → fetch providers → 返回 `providers` state
 - `getAvailableModels(provider)` 聚合 enabled + modelHealth 过滤
 - `formatModelLabel` fallback 到 model id
 
 **P2 useConfigModelListWithImage**:
+
 - image-generation providers 过滤
 - 按 builtin-image-gen ID 识别
 
 **P3 useGoogleAuthModels**:
+
 - Google auth provider 的特殊 model 列表
 - token 过期时返回空
 
@@ -1005,9 +1023,9 @@ useGoogleAuthModels OAuth model listing."
 
 #### 4b.1 文件清单
 
-| #  | 路径                                                  | 被测                                                                        | case 数 |
-| -- | ----------------------------------------------------- | --------------------------------------------------------------------------- | ------- |
-| P4 | `tests/unit/providers/ModelModalContent.dom.test.tsx` | `renderer/components/settings/SettingsModal/contents/ModelModalContent.tsx` | ≥ 5     |
+| #   | 路径                                                  | 被测                                                                        | case 数 |
+| --- | ----------------------------------------------------- | --------------------------------------------------------------------------- | ------- |
+| P4  | `tests/unit/providers/ModelModalContent.dom.test.tsx` | `renderer/components/settings/SettingsModal/contents/ModelModalContent.tsx` | ≥ 5     |
 
 用 §4a.2 模板。交互:添加 provider、编辑 API key、测试连接(mock invoke)、删除。
 
@@ -1030,11 +1048,11 @@ Covers add/edit/delete provider and test-connection flows via userEvent
 
 #### 5b.1 文件清单
 
-| #  | 路径                                                 | 被测                                                                            | case 数 |
-| -- | ---------------------------------------------------- | ------------------------------------------------------------------------------- | ------- |
-| S1 | `tests/unit/system/SystemModalContent.dom.test.tsx`  | `renderer/.../SystemModalContent/index.tsx`                                     | ≥ 5     |
-| S2 | `tests/unit/system/clientPrefSettings.test.ts`       | language / cronNotificationEnabled 等 `/api/settings/client` 的 hook 或 utils   | ≥ 5     |
-| S3 | `tests/unit/system/DisplayModalContent.dom.test.tsx` | `renderer/.../DisplayModalContent.tsx`                                          | ≥ 5     |
+| #   | 路径                                                 | 被测                                                                          | case 数 |
+| --- | ---------------------------------------------------- | ----------------------------------------------------------------------------- | ------- |
+| S1  | `tests/unit/system/SystemModalContent.dom.test.tsx`  | `renderer/.../SystemModalContent/index.tsx`                                   | ≥ 5     |
+| S2  | `tests/unit/system/clientPrefSettings.test.ts`       | language / cronNotificationEnabled 等 `/api/settings/client` 的 hook 或 utils | ≥ 5     |
+| S3  | `tests/unit/system/DisplayModalContent.dom.test.tsx` | `renderer/.../DisplayModalContent.tsx`                                        | ≥ 5     |
 
 #### 5b.2 S2 说明
 
@@ -1070,15 +1088,15 @@ DisplayModalContent theme/font/language switch flows."
 
 #### 6b.1 文件清单
 
-| #  | 路径                                               | 被测                                                          | case 数 |
-| -- | -------------------------------------------------- | ------------------------------------------------------------- | ------- |
-| C1 | `tests/unit/cron/cronUtils.test.ts`                | `renderer/pages/cron/cronUtils.ts`                            | ≥ 5     |
-| C2 | `tests/unit/cron/useCronJobs.dom.test.ts`          | `renderer/pages/cron/useCronJobs.ts`                          | ≥ 5     |
-| C3 | `tests/unit/cron/CreateTaskDialog.dom.test.tsx`    | `.../ScheduledTasksPage/CreateTaskDialog.tsx`                 | ≥ 5     |
-| C4 | `tests/unit/cron/TaskDetailPage.dom.test.tsx`      | `.../ScheduledTasksPage/TaskDetailPage.tsx`                   | ≥ 5     |
-| C5 | `tests/unit/cron/CronStatusTag.dom.test.tsx`       | `.../ScheduledTasksPage/CronStatusTag.tsx`                    | ≥ 5     |
-| C6 | `tests/unit/cron/CronJobSiderSection.dom.test.tsx` | `.../Sider/CronJobSiderSection/*.tsx` + `CronJobSiderItem.tsx` | ≥ 5     |
-| C7 | `tests/unit/cron/CronJobManager.dom.test.tsx`      | `renderer/pages/cron/components/CronJobManager.tsx`           | ≥ 5     |
+| #   | 路径                                               | 被测                                                           | case 数 |
+| --- | -------------------------------------------------- | -------------------------------------------------------------- | ------- |
+| C1  | `tests/unit/cron/cronUtils.test.ts`                | `renderer/pages/cron/cronUtils.ts`                             | ≥ 5     |
+| C2  | `tests/unit/cron/useCronJobs.dom.test.ts`          | `renderer/pages/cron/useCronJobs.ts`                           | ≥ 5     |
+| C3  | `tests/unit/cron/CreateTaskDialog.dom.test.tsx`    | `.../ScheduledTasksPage/CreateTaskDialog.tsx`                  | ≥ 5     |
+| C4  | `tests/unit/cron/TaskDetailPage.dom.test.tsx`      | `.../ScheduledTasksPage/TaskDetailPage.tsx`                    | ≥ 5     |
+| C5  | `tests/unit/cron/CronStatusTag.dom.test.tsx`       | `.../ScheduledTasksPage/CronStatusTag.tsx`                     | ≥ 5     |
+| C6  | `tests/unit/cron/CronJobSiderSection.dom.test.tsx` | `.../Sider/CronJobSiderSection/*.tsx` + `CronJobSiderItem.tsx` | ≥ 5     |
+| C7  | `tests/unit/cron/CronJobManager.dom.test.tsx`      | `renderer/pages/cron/components/CronJobManager.tsx`            | ≥ 5     |
 
 #### 6b.2 useCronJobs 特殊处理(C2)
 
@@ -1103,10 +1121,10 @@ vi.mock('@/common', () => {
   return {
     ipcBridge: {
       cron: {
-        listJobs:               { invoke: vi.fn(), provider: vi.fn() },
+        listJobs: { invoke: vi.fn(), provider: vi.fn() },
         listJobsByConversation: { invoke: vi.fn(), provider: vi.fn() },
-        updateJob:              { invoke: vi.fn(), provider: vi.fn() },
-        removeJob:              { invoke: vi.fn(), provider: vi.fn() },
+        updateJob: { invoke: vi.fn(), provider: vi.fn() },
+        removeJob: { invoke: vi.fn(), provider: vi.fn() },
         onJobCreated: { on: ws.on('cron.onJobCreated'), emit: vi.fn() },
         onJobUpdated: { on: ws.on('cron.onJobUpdated'), emit: vi.fn() },
         onJobRemoved: { on: ws.on('cron.onJobRemoved'), emit: vi.fn() },
@@ -1114,7 +1132,7 @@ vi.mock('@/common', () => {
       },
       conversation: {
         listByCronJob: { invoke: vi.fn(), provider: vi.fn() },
-        listChanged:   { on: ws.on('conv.listChanged'), emit: vi.fn() },
+        listChanged: { on: ws.on('conv.listChanged'), emit: vi.fn() },
       },
     },
     __wsEmit: ws.emit,
@@ -1124,6 +1142,7 @@ vi.mock('@/common', () => {
 ```
 
 断言点(最少 5):
+
 - 初始化 → `listJobsByConversation.invoke` 被调
 - `onJobCreated` 事件:只有 conversation_id 匹配才进 state
 - `onJobUpdated`:匹配 id 就替换该条
@@ -1143,7 +1162,8 @@ echo "exit=$?"
 ```
 
 **失败诊断**:
-- 事件触发后 state 未更新 → React 18 事件触发是同步,但 state 更新是异步 →  `await waitFor(() => expect(result.current.jobs).toHaveLength(N))`
+
+- 事件触发后 state 未更新 → React 18 事件触发是同步,但 state 更新是异步 → `await waitFor(() => expect(result.current.jobs).toHaveLength(N))`
 - fake timers 导致 WS 派发 deadlock → 用 `vi.useRealTimers()` 或 `vi.advanceTimersByTimeAsync()`
 
 #### 6b.4 commit
@@ -1170,11 +1190,11 @@ and CronJobManager (L3)."
 
 #### 2c.1 文件清单
 
-| #   | 路径                                                | 被测                                                     | case 数 |
-| --- | --------------------------------------------------- | -------------------------------------------------------- | ------- |
-| V11 | `tests/unit/previews/fileUtils.test.ts`             | `Preview/fileUtils.ts` + `previewUrls.ts`                | ≥ 5     |
-| V1  | `tests/unit/previews/PreviewContext.dom.test.tsx`   | `Preview/context/PreviewContext.tsx`                     | ≥ 5     |
-| V2  | `tests/unit/previews/usePreviewHistory.dom.test.ts` | `Preview/hooks/usePreviewHistory.ts`                     | ≥ 5     |
+| #   | 路径                                                | 被测                                      | case 数 |
+| --- | --------------------------------------------------- | ----------------------------------------- | ------- |
+| V11 | `tests/unit/previews/fileUtils.test.ts`             | `Preview/fileUtils.ts` + `previewUrls.ts` | ≥ 5     |
+| V1  | `tests/unit/previews/PreviewContext.dom.test.tsx`   | `Preview/context/PreviewContext.tsx`      | ≥ 5     |
+| V2  | `tests/unit/previews/usePreviewHistory.dom.test.ts` | `Preview/hooks/usePreviewHistory.ts`      | ≥ 5     |
 
 #### 2c.2 实现提示
 
@@ -1210,14 +1230,14 @@ ipcBridge round-trip (L2)."
 
 #### 3c.1 文件清单
 
-| #  | 路径                                                  | 被测                | case 数 |
-| -- | ----------------------------------------------------- | ------------------- | ------- |
-| V3 | `tests/unit/previews/OfficeWatchViewer.dom.test.tsx`  | `OfficeWatchViewer.tsx` | ≥ 5 |
-| V4 | `tests/unit/previews/PptViewer.dom.test.tsx`          | `PptViewer.tsx`     | ≥ 5     |
-| V5 | `tests/unit/previews/OfficeDocViewer.dom.test.tsx`    | `OfficeDocViewer.tsx` | ≥ 5 |
-| V6 | `tests/unit/previews/ExcelViewer.dom.test.tsx`        | `ExcelViewer.tsx`   | ≥ 5     |
-| V7 | `tests/unit/previews/MarkdownViewer.dom.test.tsx`     | `MarkdownViewer.tsx` | ≥ 5   |
-| V8 | `tests/unit/previews/HTMLViewer.dom.test.tsx`         | `HTMLViewer.tsx`    | ≥ 5     |
+| #   | 路径                                                 | 被测                    | case 数 |
+| --- | ---------------------------------------------------- | ----------------------- | ------- |
+| V3  | `tests/unit/previews/OfficeWatchViewer.dom.test.tsx` | `OfficeWatchViewer.tsx` | ≥ 5     |
+| V4  | `tests/unit/previews/PptViewer.dom.test.tsx`         | `PptViewer.tsx`         | ≥ 5     |
+| V5  | `tests/unit/previews/OfficeDocViewer.dom.test.tsx`   | `OfficeDocViewer.tsx`   | ≥ 5     |
+| V6  | `tests/unit/previews/ExcelViewer.dom.test.tsx`       | `ExcelViewer.tsx`       | ≥ 5     |
+| V7  | `tests/unit/previews/MarkdownViewer.dom.test.tsx`    | `MarkdownViewer.tsx`    | ≥ 5     |
+| V8  | `tests/unit/previews/HTMLViewer.dom.test.tsx`        | `HTMLViewer.tsx`        | ≥ 5     |
 
 所有 viewer 都是 L3 component;用 §4a.2 模板。典型断言:渲染、加载中、错误、空文件、重新加载。
 
@@ -1259,6 +1279,7 @@ stubbed renderers and PreviewContext."
 | V12 | `tests/unit/previews/previewHistoryIntegration.test.ts`   | Preview History ipcBridge 组合(mock `/api/preview-history/*`,用 mockHttpBridge) | ≥ 5     |
 
 **V9/V10 import 路径修正**:
+
 ```ts
 import { PreviewPanel } from '@/renderer/pages/conversation/Preview/components/PreviewPanel/PreviewPanel';
 import { PreviewHistoryDropdown } from '@/renderer/pages/conversation/Preview/components/PreviewPanel/PreviewHistoryDropdown';
@@ -1308,10 +1329,10 @@ mockHttpBridge (L4)."
 
 > **⚠️ 源码路径修正**:requirements 里 X1 写"前端 agent logo 解析 / asset URL 构造工具(grep 找出实际文件)"。实际文件为 `packages/desktop/src/renderer/utils/model/agentLogo.ts`(含 `getAgentLogo` / `resolveAgentLogo` / `hasAgentLogo` / `isDefaultModel` / `getModelDisplayLabel`)。
 
-| #  | 路径                                                 | 被测                                                         | case 数 |
-| -- | ---------------------------------------------------- | ------------------------------------------------------------ | ------- |
-| X1 | `tests/unit/assets/agentLogo.test.ts`                | `renderer/utils/model/agentLogo.ts`                          | ≥ 5     |
-| X2 | `tests/unit/assets/presetAssistantResources.test.ts` | `renderer/utils/model/presetAssistantResources.ts`           | ≥ 5     |
+| #   | 路径                                                 | 被测                                               | case 数 |
+| --- | ---------------------------------------------------- | -------------------------------------------------- | ------- |
+| X1  | `tests/unit/assets/agentLogo.test.ts`                | `renderer/utils/model/agentLogo.ts`                | ≥ 5     |
+| X2  | `tests/unit/assets/presetAssistantResources.test.ts` | `renderer/utils/model/presetAssistantResources.ts` | ≥ 5     |
 
 #### 5c.2 X1 断言要点
 
@@ -1353,11 +1374,11 @@ dark-theme variant swap, and presetAssistantResources default loader
 
 #### 6c.1 文件清单
 
-| #  | 路径                                                       | 被测                                                                                                                   | case 数 |
-| -- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------- |
-| B1 | `tests/unit/bootstrap/initStorage.migrations.test.ts`      | `process/utils/initStorage.ts` 中与 migration 相关的分支(M1 / assistant / provider)                                   | ≥ 5     |
-| B2 | `tests/unit/bootstrap/configMigrationIntegration.test.ts`  | 跨文件:`configMigration` + `migrateAssistants` + `runBackendMigrations` 串起来的首启流程,用 `mockHttpBridge`           | ≥ 5     |
-| B3 | `tests/unit/bootstrap/migrationErrorRecovery.test.ts`      | 某一步 migration 失败时的降级行为(从 `runBackendMigrations.ts` 的 `allSucceeded` 分支反推)                             | ≥ 5     |
+| #   | 路径                                                      | 被测                                                                                                         | case 数 |
+| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------- |
+| B1  | `tests/unit/bootstrap/initStorage.migrations.test.ts`     | `process/utils/initStorage.ts` 中与 migration 相关的分支(M1 / assistant / provider)                          | ≥ 5     |
+| B2  | `tests/unit/bootstrap/configMigrationIntegration.test.ts` | 跨文件:`configMigration` + `migrateAssistants` + `runBackendMigrations` 串起来的首启流程,用 `mockHttpBridge` | ≥ 5     |
+| B3  | `tests/unit/bootstrap/migrationErrorRecovery.test.ts`     | 某一步 migration 失败时的降级行为(从 `runBackendMigrations.ts` 的 `allSucceeded` 分支反推)                   | ≥ 5     |
 
 #### 6c.2 实现提示
 
@@ -1570,6 +1591,7 @@ echo "exit=$?"
 ```
 
 **复跑失败**:
+
 - 基线引入破坏(例如 backend API 字段改动) → STOP,escalate
 - 本里程碑隐性冲突 → 修 + 新 commit + handoff Deviations
 
@@ -1598,6 +1620,7 @@ cat /tmp/n4-phase9-final-sha.txt
 ```
 
 **禁止**:
+
 - `git push origin HEAD:feat/backend-migration`
 - `git push origin HEAD:dev`
 - `gh workflow run` / `gh pr create`
@@ -1724,17 +1747,17 @@ TaskUpdate({
 
 ### 13.1 总览表
 
-| Phase    | N4a commit message                                                                                | N4b commit message                                                               | N4c commit message                                                     |
-| -------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 2a/b/c   | `test(n4a): add assistantUtils unit tests (A5)`                                                   | `test(n4b): add providers L1 pure function tests (P5-P8)`                        | `test(n4c): add preview utils/context/history hook tests (V1, V2, V11)` |
-| 3a/b/c   | `test(n4a): add assistants hooks dom tests (A1-A4)`                                               | `test(n4b): add providers hooks dom tests (P1-P3)`                               | `test(n4c): add preview viewers L3 dom tests (V3-V8)`                  |
-| 4a/b/c   | `test(n4a): add assistants L3 component dom tests (A6-A10)`                                       | `test(n4b): add ModelModalContent dom tests (P4)`                                | `test(n4c): add preview panel + history tests (V9, V10, V12)`          |
-| 5a/b/c   | `test(n4a): add assistants L4 migration tests (A11-A12)`                                          | `test(n4b): add system settings tests (S1-S3)`                                   | `test(n4c): add assets tests (X1-X2)`                                  |
-| 6a/b/c   | `test(n4a): add skills tests (SK1-SK4)`                                                           | `test(n4b): add cron tests (C1-C7)`                                              | `test(n4c): add bootstrap tests (B1-B3)`                               |
-| 7a       | `test(n4a): add extension tests (E1-E3)`                                                          | —                                                                                | —                                                                      |
-| 9 sync   | `chore(n4): sync with feat/backend-migration`(若基线有更新)                                     | 同左                                                                             | 同左                                                                   |
-| 9 修复   | `test(n4{a,b,c}): fix <phaseX> after baseline sync`(若基线同步后需要修 bug)                      | 同左                                                                             | 同左                                                                   |
-| 10(如授权自己写 handoff) | `docs(n4{a,b,c}): add N4-outcome {A/B/C} section with UC-F evidence` | 同左                                                                             | 同左                                                                   |
+| Phase                    | N4a commit message                                                          | N4b commit message                                        | N4c commit message                                                      |
+| ------------------------ | --------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 2a/b/c                   | `test(n4a): add assistantUtils unit tests (A5)`                             | `test(n4b): add providers L1 pure function tests (P5-P8)` | `test(n4c): add preview utils/context/history hook tests (V1, V2, V11)` |
+| 3a/b/c                   | `test(n4a): add assistants hooks dom tests (A1-A4)`                         | `test(n4b): add providers hooks dom tests (P1-P3)`        | `test(n4c): add preview viewers L3 dom tests (V3-V8)`                   |
+| 4a/b/c                   | `test(n4a): add assistants L3 component dom tests (A6-A10)`                 | `test(n4b): add ModelModalContent dom tests (P4)`         | `test(n4c): add preview panel + history tests (V9, V10, V12)`           |
+| 5a/b/c                   | `test(n4a): add assistants L4 migration tests (A11-A12)`                    | `test(n4b): add system settings tests (S1-S3)`            | `test(n4c): add assets tests (X1-X2)`                                   |
+| 6a/b/c                   | `test(n4a): add skills tests (SK1-SK4)`                                     | `test(n4b): add cron tests (C1-C7)`                       | `test(n4c): add bootstrap tests (B1-B3)`                                |
+| 7a                       | `test(n4a): add extension tests (E1-E3)`                                    | —                                                         | —                                                                       |
+| 9 sync                   | `chore(n4): sync with feat/backend-migration`(若基线有更新)                 | 同左                                                      | 同左                                                                    |
+| 9 修复                   | `test(n4{a,b,c}): fix <phaseX> after baseline sync`(若基线同步后需要修 bug) | 同左                                                      | 同左                                                                    |
+| 10(如授权自己写 handoff) | `docs(n4{a,b,c}): add N4-outcome {A/B/C} section with UC-F evidence`        | 同左                                                      | 同左                                                                    |
 
 ### 13.2 禁止的 commit 模式
 
@@ -1786,6 +1809,7 @@ TaskUpdate({
 ### 14.3 Phase 完成判定(机械化)
 
 每个 Phase 视为完成,当且仅当:
+
 - 所有命令输出退出码 = 0
 - 所有预期文件已创建
 - 已 commit 且 commit message 符合 §13 模板
@@ -1795,27 +1819,27 @@ TaskUpdate({
 
 ## 15. 失败诊断路径汇总
 
-| 失败现象                                                             | 看哪个日志                         | 诊断方向                                                                                |
-| -------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------- |
-| `bun install` 挂                                                     | 终端实时                           | 网络 / lockfile 损坏 → `rm -rf node_modules && bun install`                             |
-| vitest 找不到 test                                                   | /tmp/n4*-phaseX-vitest.log         | 文件名必须 `.test.ts` 或 `.dom.test.ts(x)`;检查路径                                     |
-| vitest alias `@/` 无法解析                                           | /tmp/n4*-phaseX-vitest.log         | `vitest.config.ts` 的 aliases(N3 已锁,不改)                                           |
-| `Cannot access 'mockBridge' before initialization`                   | vitest log                         | vi.mock 工厂引用了外部 const → 改为 §2.3 模板 B(vi.mock 工厂里只放 vi.fn())            |
-| `MODULE_NOT_FOUND` in vi.hoisted                                     | vitest log                         | 同上,vi.hoisted + require 不行 → 用 §2.3 模板 B                                        |
-| worker fork 死锁 / 单测 > 2 分钟                                     | vitest log hangs                   | vi.mock async factory + dynamic import → 改为 inline vi.mock + mockImplementation       |
-| `restoreAllMocks` 破坏 vi.mock                                       | vitest 日志后续 test 挂           | `afterEach` 去掉 restoreAllMocks,只保留 clearAllMocks                                   |
-| fake timers + async 挂起                                             | test 超时                          | `await vi.advanceTimersByTimeAsync(ms)` 而非同步                                        |
-| reject promise 报 "Unhandled rejection"                              | vitest warn                        | **先绑 `await expect(p).rejects.toThrow()` 再触发**,不要先触发后绑                     |
-| `renderHook` 报 `No QueryClientProvider` / `No SWRConfig`            | dom test 日志                      | 传 `wrapper` 包 SWRConfig;类似地,Preview / i18n 需要对应 Provider wrapper              |
-| `unable to find element ...`                                         | dom test 日志                      | Arco 的组件渲染后 role / name 可能与原生 HTML 不同;用 `data-testid` 或 `screen.debug()` |
-| "Not wrapped in act(...)"                                            | dom test 日志                      | 用 `await user.click(...)`,不要用 `fireEvent`                                          |
-| coverage 报告生成失败 (`v8 provider crashes`)                         | /tmp/n4-phase8-coverage.log        | escalate(vitest 4 升级兼容问题);handoff 记录,不 gate                                |
-| prek Oxfmt 报 Failed,未自动修复                                     | /tmp/n4-phase8-prek.log            | `bun run format` → 再跑 prek;修复 diff 要 commit                                        |
-| rebase 冲突在自己分区之外文件                                        | git status                         | 一定有人越界;STOP,escalate                                                            |
-| push 被拒 `non-fast-forward`                                         | push 输出                          | 远端有别人的新 commit → `git pull --rebase` → push;≥ 3 次被夺先 → escalate              |
-| `grep -rn ".skip\|..."` 有输出                                       | /tmp/n4-phase8-skip.log            | UC-F-4 违规,必须改成正常 test 或删除                                                    |
-| `git diff origin/.../mockHttpBridge.ts` 有输出                       | /tmp/n4-phase8-helper-diff.log     | N4 禁止改 helper;revert 自己的改动 → 若真需要扩展 → escalate                            |
-| backend 行为与 adapter 不一致(N4 测试写着失败)                      | vitest log + 源码 inspect          | UC-G:判断 scope,本分区 crate 内就在 backend 同名分支改、cargo test、handoff 记录       |
+| 失败现象                                                  | 看哪个日志                     | 诊断方向                                                                                |
+| --------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------- |
+| `bun install` 挂                                          | 终端实时                       | 网络 / lockfile 损坏 → `rm -rf node_modules && bun install`                             |
+| vitest 找不到 test                                        | /tmp/n4\*-phaseX-vitest.log    | 文件名必须 `.test.ts` 或 `.dom.test.ts(x)`;检查路径                                     |
+| vitest alias `@/` 无法解析                                | /tmp/n4\*-phaseX-vitest.log    | `vitest.config.ts` 的 aliases(N3 已锁,不改)                                             |
+| `Cannot access 'mockBridge' before initialization`        | vitest log                     | vi.mock 工厂引用了外部 const → 改为 §2.3 模板 B(vi.mock 工厂里只放 vi.fn())             |
+| `MODULE_NOT_FOUND` in vi.hoisted                          | vitest log                     | 同上,vi.hoisted + require 不行 → 用 §2.3 模板 B                                         |
+| worker fork 死锁 / 单测 > 2 分钟                          | vitest log hangs               | vi.mock async factory + dynamic import → 改为 inline vi.mock + mockImplementation       |
+| `restoreAllMocks` 破坏 vi.mock                            | vitest 日志后续 test 挂        | `afterEach` 去掉 restoreAllMocks,只保留 clearAllMocks                                   |
+| fake timers + async 挂起                                  | test 超时                      | `await vi.advanceTimersByTimeAsync(ms)` 而非同步                                        |
+| reject promise 报 "Unhandled rejection"                   | vitest warn                    | **先绑 `await expect(p).rejects.toThrow()` 再触发**,不要先触发后绑                      |
+| `renderHook` 报 `No QueryClientProvider` / `No SWRConfig` | dom test 日志                  | 传 `wrapper` 包 SWRConfig;类似地,Preview / i18n 需要对应 Provider wrapper               |
+| `unable to find element ...`                              | dom test 日志                  | Arco 的组件渲染后 role / name 可能与原生 HTML 不同;用 `data-testid` 或 `screen.debug()` |
+| "Not wrapped in act(...)"                                 | dom test 日志                  | 用 `await user.click(...)`,不要用 `fireEvent`                                           |
+| coverage 报告生成失败 (`v8 provider crashes`)             | /tmp/n4-phase8-coverage.log    | escalate(vitest 4 升级兼容问题);handoff 记录,不 gate                                    |
+| prek Oxfmt 报 Failed,未自动修复                           | /tmp/n4-phase8-prek.log        | `bun run format` → 再跑 prek;修复 diff 要 commit                                        |
+| rebase 冲突在自己分区之外文件                             | git status                     | 一定有人越界;STOP,escalate                                                              |
+| push 被拒 `non-fast-forward`                              | push 输出                      | 远端有别人的新 commit → `git pull --rebase` → push;≥ 3 次被夺先 → escalate              |
+| `grep -rn ".skip\|..."` 有输出                            | /tmp/n4-phase8-skip.log        | UC-F-4 违规,必须改成正常 test 或删除                                                    |
+| `git diff origin/.../mockHttpBridge.ts` 有输出            | /tmp/n4-phase8-helper-diff.log | N4 禁止改 helper;revert 自己的改动 → 若真需要扩展 → escalate                            |
+| backend 行为与 adapter 不一致(N4 测试写着失败)            | vitest log + 源码 inspect      | UC-G:判断 scope,本分区 crate 内就在 backend 同名分支改、cargo test、handoff 记录        |
 
 ---
 

@@ -41,14 +41,14 @@
 
 **上游源码情况(只读 / 不改)**:
 
-| 源码                                                              | 行数 | 用途                                                            |
-| ----------------------------------------------------------------- | ---: | --------------------------------------------------------------- |
-| `packages/desktop/src/common/adapter/httpBridge.ts`               |  421 | HTTP/WS 工厂 + `BackendHttpError` + `ensureWs` 重连逻辑         |
-| `packages/desktop/src/common/adapter/apiModelMapper.ts`           |   95 | model 前后端互转 + `fromApiConversation` / `fromApiPaginated…`  |
-| `packages/desktop/src/common/adapter/searchMapper.ts`             |   54 | `fromApiSearchResult` 搜索结果映射                              |
-| `packages/desktop/src/common/config/configMigration.ts`           |  222 | `migrateConfigStorage` + `migrateProviders`                     |
-| `packages/desktop/src/common/config/storage.ts`                   |  594 | 类型 + `ConfigStorage` / `EnvStorage` / `BUILTIN_IMAGE_GEN_ID`  |
-| `packages/desktop/src/common/adapter/ipcBridge.ts` (仅 type 依赖) | 1617 | `PaginatedResult<T>` 类型引用                                   |
+| 源码                                                              | 行数 | 用途                                                           |
+| ----------------------------------------------------------------- | ---: | -------------------------------------------------------------- |
+| `packages/desktop/src/common/adapter/httpBridge.ts`               |  421 | HTTP/WS 工厂 + `BackendHttpError` + `ensureWs` 重连逻辑        |
+| `packages/desktop/src/common/adapter/apiModelMapper.ts`           |   95 | model 前后端互转 + `fromApiConversation` / `fromApiPaginated…` |
+| `packages/desktop/src/common/adapter/searchMapper.ts`             |   54 | `fromApiSearchResult` 搜索结果映射                             |
+| `packages/desktop/src/common/config/configMigration.ts`           |  222 | `migrateConfigStorage` + `migrateProviders`                    |
+| `packages/desktop/src/common/config/storage.ts`                   |  594 | 类型 + `ConfigStorage` / `EnvStorage` / `BUILTIN_IMAGE_GEN_ID` |
+| `packages/desktop/src/common/adapter/ipcBridge.ts` (仅 type 依赖) | 1617 | `PaginatedResult<T>` 类型引用                                  |
 
 **预计执行时间**(顺序):~8-10 小时工时
 
@@ -231,14 +231,14 @@ export function resetMockHttpBridge(mock: MockHttpBridge): void;
 
 executor 在 Phase 0/9 会用到以下来自 N2-outcome 的字段:
 
-| N2 handoff 字段         | 本 plan 用在哪              | 具体值(N2 上游已锁)                                                  |
-| ----------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| 上游分支名              | Phase 1 步骤 1.1(checkout) | `feat/n2-legacy-test-cleanup`                                          |
-| 上游 SHA                | Phase 1 步骤 1.1            | `ae1d150f3ae2d942bd3d9aeb2139932f8c33f19f`                             |
-| 基线分支名 / SHA        | Phase 9 步骤 9.1            | `origin/feat/backend-migration` @ `e4cdff41fb7eb154a43dbe5568bfb2edc7fb7ea2` |
-| vitest 空集合退出码 1   | Phase 0 基线节              | 已知偏离,N2 team-lead 已接受;N3 加测试后自然恢复 0                   |
-| 12 个骨架目录           | Phase 1 预检                | 含 `_helpers` / `common-adapter` / `common-config` 等(均已带 .gitkeep)|
-| 上游门禁全绿            | 无需回跑 N2 验证            | lint / tsc / vitest(exit 1 预期)/ prek 均已验证                       |
+| N2 handoff 字段       | 本 plan 用在哪             | 具体值(N2 上游已锁)                                                          |
+| --------------------- | -------------------------- | ---------------------------------------------------------------------------- |
+| 上游分支名            | Phase 1 步骤 1.1(checkout) | `feat/n2-legacy-test-cleanup`                                                |
+| 上游 SHA              | Phase 1 步骤 1.1           | `ae1d150f3ae2d942bd3d9aeb2139932f8c33f19f`                                   |
+| 基线分支名 / SHA      | Phase 9 步骤 9.1           | `origin/feat/backend-migration` @ `e4cdff41fb7eb154a43dbe5568bfb2edc7fb7ea2` |
+| vitest 空集合退出码 1 | Phase 0 基线节             | 已知偏离,N2 team-lead 已接受;N3 加测试后自然恢复 0                           |
+| 12 个骨架目录         | Phase 1 预检               | 含 `_helpers` / `common-adapter` / `common-config` 等(均已带 .gitkeep)       |
+| 上游门禁全绿          | 无需回跑 N2 验证           | lint / tsc / vitest(exit 1 预期)/ prek 均已验证                              |
 
 **未覆盖的决策点 → 本 plan 无。** requirements + 本签名锁已穷尽 N3 所需决策。若 executor 执行中发现新决策点(如 helper 需要扩展),**SendMessage 给 team-lead**,不自行定夺。
 
@@ -332,6 +332,7 @@ echo "exit=$?" >> /tmp/n3-baseline/vitest.log
 ```
 
 **判定**:
+
 - `test-file-count.txt == 12` ✓
 - vitest 日志含 "No test files found" ✓
 - 两者都是 N2 已验证状态,执行到这一步只是"确认没跑错分支"。
@@ -429,16 +430,16 @@ git rm tests/unit/_helpers/.gitkeep
 
 最低 **8 个 test case**:
 
-| #    | test case 标题(示例)                                                                  | 断言关键点                                                                  |
-| ---- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| T6.1 | `createMockHttpBridge() returns object with frozen public API`                          | 返回值包含 `onGet/.../onDelete/emit/calls/routeCount/wsListenerCount/reset/asModule`,无多余字段 |
-| T6.2 | `onGet registers a handler; asModule().httpGet(path).invoke() returns handler result`   | GET `/api/foo` → `{ ok: true }`;`calls` 累加 1,path/method/params 正确     |
-| T6.3 | `onPost forwards body and returns handler result`                                       | POST `/api/items` + body `{ id: 'a' }` → handler 收到 body;calls 记录 body |
-| T6.4 | `:param placeholder populates params map`                                               | `onGet('/api/providers/:id', ...)` + invoke `/api/providers/p1` → params.id = 'p1' |
-| T6.5 | `unmatched route throws "unexpected call" by default`                                   | 调用未注册路由 → `await expect(...).rejects.toThrow(/unexpected call/)`     |
-| T6.6 | `unmatched option "warn" returns undefined and logs console.warn`                       | `createMockHttpBridge({ unmatched: 'warn' })` → 未匹配时不抛,console.warn spy 收到 1 次 |
-| T6.7 | `emit() dispatches to all wsEmitter listeners synchronously`                            | `asModule().wsEmitter('evt').on(cb)` + `mock.emit('evt', payload)` → cb 被同步调用;`wsListenerCount` = 1 |
-| T6.8 | `reset() clears routes, listeners, and calls`                                           | 注册路由 + 订阅 + 调 invoke → `reset()` → `routeCount === 0 && wsListenerCount === 0 && calls.length === 0` |
+| #    | test case 标题(示例)                                                                  | 断言关键点                                                                                                  |
+| ---- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| T6.1 | `createMockHttpBridge() returns object with frozen public API`                        | 返回值包含 `onGet/.../onDelete/emit/calls/routeCount/wsListenerCount/reset/asModule`,无多余字段             |
+| T6.2 | `onGet registers a handler; asModule().httpGet(path).invoke() returns handler result` | GET `/api/foo` → `{ ok: true }`;`calls` 累加 1,path/method/params 正确                                      |
+| T6.3 | `onPost forwards body and returns handler result`                                     | POST `/api/items` + body `{ id: 'a' }` → handler 收到 body;calls 记录 body                                  |
+| T6.4 | `:param placeholder populates params map`                                             | `onGet('/api/providers/:id', ...)` + invoke `/api/providers/p1` → params.id = 'p1'                          |
+| T6.5 | `unmatched route throws "unexpected call" by default`                                 | 调用未注册路由 → `await expect(...).rejects.toThrow(/unexpected call/)`                                     |
+| T6.6 | `unmatched option "warn" returns undefined and logs console.warn`                     | `createMockHttpBridge({ unmatched: 'warn' })` → 未匹配时不抛,console.warn spy 收到 1 次                     |
+| T6.7 | `emit() dispatches to all wsEmitter listeners synchronously`                          | `asModule().wsEmitter('evt').on(cb)` + `mock.emit('evt', payload)` → cb 被同步调用;`wsListenerCount` = 1    |
+| T6.8 | `reset() clears routes, listeners, and calls`                                         | 注册路由 + 订阅 + 调 invoke → `reset()` → `routeCount === 0 && wsListenerCount === 0 && calls.length === 0` |
 
 可选(执行者时间允许再加):
 
@@ -459,6 +460,7 @@ echo "exit=$?"
 ```
 
 **FAIL 诊断路径**:
+
 - tsc 报 "Cannot find module `@/common/adapter/httpBridge`" → vitest alias OK,但 tsc 读 `tsconfig.json` 的 `paths` 看不到 `@/*`。检查 `tsconfig.json` 的 `paths["@/*"]`,应该已指向 `./packages/desktop/src/*`(M1 已建)。若异常 → escalate(上游问题)。
 - vitest 报 "No test files found" → 检查文件名必须是 `.test.ts` 而非 `.spec.ts`;目录必须在 `tests/unit/_helpers/` 下。
 - vitest 报 "Cannot find module '@/common/adapter/httpBridge'" → 检查 `vitest.config.ts` 的 `aliases['@/']`(已存在,指向 `packages/desktop/src/`)。
@@ -490,19 +492,19 @@ interface) is frozen per docs/backend-migration/plans/2026-05-08-n3-test-rewrite
 
 ### 步骤 3.1 — 目标断言清单(最少 8 个 test case)
 
-| #    | 用例                                                             | 输入 / 断言                                                                                                                                                  |
-| ---- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| T1.1 | `toApiModel` 映射必填字段                                          | 输入 `{ id: 'openai', use_model: 'gpt-5', platform: 'openai', name: 'x', base_url: 'y', api_key: 'z' }` → `{ provider_id: 'openai', model: 'gpt-5' }`。验证没有多余字段 |
-| T1.2 | `toApiModelOptional` undefined → undefined                       | `toApiModelOptional(undefined)` → `undefined`                                                                                                                |
-| T1.3 | `toApiModelOptional` id 为空 → undefined                          | 输入 `{ id: '', use_model: 'gpt' }` → `undefined`(hasCompleteModelIdentity false)                                                                             |
-| T1.4 | `toApiModelOptional` use_model 为空 → undefined                   | 输入 `{ id: 'x', use_model: '' }` → `undefined`                                                                                                              |
-| T1.5 | `toApiModelOptional` 完整 → 正常映射                              | 输入 `{ id: 'x', use_model: 'gpt' }` → `{ provider_id: 'x', model: 'gpt' }`                                                                                   |
-| T1.6 | `fromApiModel` 映射并补空的 provider 字段                         | 输入 `{ provider_id: 'p', model: 'm' }` → `{ id: 'p', platform: '', name: '', base_url: '', api_key: '', use_model: 'm' }`。另测 `use_model ?? model` fallback |
-| T1.7 | `fromApiConversation` 把 model 从 ApiProvider 转 TProviderWithModel | raw 带 `model: { provider_id: 'p', model: 'm' }` → next.model 为 `{ id: 'p', ..., use_model: 'm' }`;raw 无 model → next.model undefined                        |
-| T1.8 | `fromApiConversation` 补 `custom_workspace`                        | raw.extra = `{ workspace: '/tmp', is_temporary_workspace: false }` → next.extra.custom_workspace = true;`is_temporary_workspace: true` → false;workspace 为空字符串 → false |
-| T1.9 | `fromApiConversation` 已有 `custom_workspace` 不覆盖              | raw.extra 已含 `custom_workspace: true`(任意值)→ next.extra 不被重算,保持输入                                                                               |
-| T1.10| `fromApiConversation` 非对象输入直接返回                          | raw = null / undefined / 'string' → 原样返回                                                                                                                  |
-| T1.11| `fromApiPaginatedConversations` items 逐条映射 + 保留 total/has_more | 输入 `{ items: [{...model...}, {...no model...}], total: 2, has_more: false }` → items 经过 fromApiConversation;total/has_more 原样                         |
+| #     | 用例                                                                 | 输入 / 断言                                                                                                                                                                 |
+| ----- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1.1  | `toApiModel` 映射必填字段                                            | 输入 `{ id: 'openai', use_model: 'gpt-5', platform: 'openai', name: 'x', base_url: 'y', api_key: 'z' }` → `{ provider_id: 'openai', model: 'gpt-5' }`。验证没有多余字段     |
+| T1.2  | `toApiModelOptional` undefined → undefined                           | `toApiModelOptional(undefined)` → `undefined`                                                                                                                               |
+| T1.3  | `toApiModelOptional` id 为空 → undefined                             | 输入 `{ id: '', use_model: 'gpt' }` → `undefined`(hasCompleteModelIdentity false)                                                                                           |
+| T1.4  | `toApiModelOptional` use_model 为空 → undefined                      | 输入 `{ id: 'x', use_model: '' }` → `undefined`                                                                                                                             |
+| T1.5  | `toApiModelOptional` 完整 → 正常映射                                 | 输入 `{ id: 'x', use_model: 'gpt' }` → `{ provider_id: 'x', model: 'gpt' }`                                                                                                 |
+| T1.6  | `fromApiModel` 映射并补空的 provider 字段                            | 输入 `{ provider_id: 'p', model: 'm' }` → `{ id: 'p', platform: '', name: '', base_url: '', api_key: '', use_model: 'm' }`。另测 `use_model ?? model` fallback              |
+| T1.7  | `fromApiConversation` 把 model 从 ApiProvider 转 TProviderWithModel  | raw 带 `model: { provider_id: 'p', model: 'm' }` → next.model 为 `{ id: 'p', ..., use_model: 'm' }`;raw 无 model → next.model undefined                                     |
+| T1.8  | `fromApiConversation` 补 `custom_workspace`                          | raw.extra = `{ workspace: '/tmp', is_temporary_workspace: false }` → next.extra.custom_workspace = true;`is_temporary_workspace: true` → false;workspace 为空字符串 → false |
+| T1.9  | `fromApiConversation` 已有 `custom_workspace` 不覆盖                 | raw.extra 已含 `custom_workspace: true`(任意值)→ next.extra 不被重算,保持输入                                                                                               |
+| T1.10 | `fromApiConversation` 非对象输入直接返回                             | raw = null / undefined / 'string' → 原样返回                                                                                                                                |
+| T1.11 | `fromApiPaginatedConversations` items 逐条映射 + 保留 total/has_more | 输入 `{ items: [{...model...}, {...no model...}], total: 2, has_more: false }` → items 经过 fromApiConversation;total/has_more 原样                                         |
 
 **至少 8 个 test case,推荐落 11 个(覆盖所有分支)。**
 
@@ -511,6 +513,7 @@ interface) is frozen per docs/backend-migration/plans/2026-05-08-n3-test-rewrite
 用 Write 工具创建 `tests/unit/common-adapter/apiModelMapper.test.ts`。文件头 license JSDoc 必加(参照 Phase 2 模板)。
 
 **关键约束**:
+
 - `import { toApiModel, toApiModelOptional, fromApiModel, fromApiConversation, fromApiPaginatedConversations } from '@/common/adapter/apiModelMapper';`
 - 纯函数测试,**不需要** mock httpBridge。
 - 不用 fake timers。
@@ -531,6 +534,7 @@ echo "exit=$?"
 ```
 
 **FAIL 诊断**:
+
 - `TypeError: Cannot destructure ...` → import 路径拼错;检查 `@/common/adapter/apiModelMapper`。
 - 某个断言挂在 `toApiModelOptional` 期望 undefined 但得到对象 → 检查 `hasCompleteModelIdentity` 分支条件(id 为 `'   '` 空白串也要返回 undefined,因为源码用了 `.trim().length > 0`)。
 - `fromApiConversation` 在 null 上挂 → 源码第 58 行 `if (!raw || typeof raw !== 'object') return raw;`,确保测试用的 `null` / `string` 原样返回。
@@ -554,13 +558,13 @@ item mapping. No mock needed — pure function suite."
 
 ### 步骤 4.1 — 断言清单(最少 5 个 test case)
 
-| #    | 用例                                                                                  | 断言                                                                                                                     |
-| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| T2.1 | `fromApiSearchResult` 保留 total / has_more                                          | 输入 `{ items: [], total: 42, has_more: true }` → 输出 total=42, has_more=true, items.length=0                             |
-| T2.2 | items 按 `fromApiSearchItem` 映射:conversation fields 完整                           | 输入一个完整 ApiMessageSearchItem(含 model、extra、pinned 等)→ 输出 conversation 经 fromApiConversation 转换;message 字段逐字透传 |
-| T2.3 | conversation.model 为 null → conversation.model undefined                            | 输入 item.conversation.model = null → 输出 conversation.model 为 undefined(由 `?? undefined` 处理)                         |
-| T2.4 | message_type 作为 TMessage['type'] 透传                                               | 输入 message_type = 'text' → 输出 message_type = 'text',字段不变                                                          |
-| T2.5 | 多 items 时逐个映射                                                                    | 输入 items = [a, b] → 输出 items = [f(a), f(b)];length 相等                                                                |
+| #    | 用例                                                       | 断言                                                                                                                              |
+| ---- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| T2.1 | `fromApiSearchResult` 保留 total / has_more                | 输入 `{ items: [], total: 42, has_more: true }` → 输出 total=42, has_more=true, items.length=0                                    |
+| T2.2 | items 按 `fromApiSearchItem` 映射:conversation fields 完整 | 输入一个完整 ApiMessageSearchItem(含 model、extra、pinned 等)→ 输出 conversation 经 fromApiConversation 转换;message 字段逐字透传 |
+| T2.3 | conversation.model 为 null → conversation.model undefined  | 输入 item.conversation.model = null → 输出 conversation.model 为 undefined(由 `?? undefined` 处理)                                |
+| T2.4 | message_type 作为 TMessage['type'] 透传                    | 输入 message_type = 'text' → 输出 message_type = 'text',字段不变                                                                  |
+| T2.5 | 多 items 时逐个映射                                        | 输入 items = [a, b] → 输出 items = [f(a), f(b)];length 相等                                                                       |
 
 ### 步骤 4.2 — 写文件
 
@@ -593,32 +597,33 @@ mapping (conversation via fromApiConversation, message fields pass-through)."
 **重点**:此文件**直接测源码**,不走 mockHttpBridge。mock 对象只在后续 N4 领域测试里消费。
 
 **环境约束**(requirements "关键风险" 节):
+
 - 此 `.test.ts` 用 `@vitest-environment node`(默认);
 - `window` 用 `vi.stubGlobal('window', ...)` 精准注入;
 - 若要测 jsdom 分支,**另起** `httpBridge.dom.test.ts`(本里程碑**不强制要求**,node 分支足够覆盖三分支逻辑)。
 
 ### 步骤 5.1 — 断言清单(最少 12 个 test case)
 
-| #     | 用例                                                       | 实现要点                                                                                                                              |
-| ----- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| T3.1  | `getBaseUrl` 在 node 环境(无 window) 回退到 127.0.0.1:13400 | 无 stub → 调 `getBaseUrl()` → `http://127.0.0.1:13400`                                                                                  |
-| T3.2  | `getBaseUrl` 从 `globalThis.__backendPort` 读端口           | `(globalThis as any).__backendPort = 23456;` → 调 → `http://127.0.0.1:23456`                                                            |
-| T3.3  | `getBaseUrl` 从 `window.__backendPort` 优先读               | `vi.stubGlobal('window', { __backendPort: 34567 })` → `http://127.0.0.1:34567`                                                          |
-| T3.4  | `getBaseUrl` WebUI 模式(window + document 且无 port)→ ''  | `vi.stubGlobal('window', {})`、`vi.stubGlobal('document', {})` → `getBaseUrl()` 返回空字符串                                            |
-| T3.5  | `httpGet` 构造 `{ provider, invoke }`,`provider` 是 no-op    | `const h = httpGet('/api/x'); h.provider(() => Promise.resolve()); expect(h.provider).toBeTypeOf('function')`;调用不报错,无副作用     |
-| T3.6  | `httpGet` invoke 触发 `fetch`,GET 无 body,wrap 解包       | `vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { x: 1 } }), { status: 200, headers: { 'Content-Type': 'application/json' } })))`;调用 invoke;断言返回 `{ x: 1 }`(data 解包) |
-| T3.7  | `httpPost` invoke 序列化 body,传 content-type              | 构造 fetch spy;调用 `httpPost('/api/x').invoke({ k: 'v' })`;断言 spy 被调用;args[1].method === 'POST',args[1].body 是 `JSON.stringify({k:'v'})`,headers 含 `Content-Type: application/json` |
-| T3.8  | `httpPost` 传 `mapBody` 自定义映射                          | `httpPost('/api/x', (p) => ({ wrapped: p })).invoke('raw')`;断言 fetch body = `'{"wrapped":"raw"}'`                                     |
-| T3.9  | path 作为函数时以 params 展开                               | `httpGet((p) => `/api/${p.id}`).invoke({ id: 'abc' })`;断言 fetch url 包含 `/api/abc`                                                 |
-| T3.10 | 非 2xx 响应抛 `BackendHttpError` + code / status / backendMessage | fetch 返回 `new Response(JSON.stringify({ success: false, error: 'bad', code: 'X_BAD' }), { status: 400, headers: {...} })`;`await expect(invoke).rejects.toBeInstanceOf(BackendHttpError)`;捕获后断言 status=400, code='X_BAD', backendMessage='bad' |
-| T3.11 | 非 JSON 响应返回 `undefined`                                | fetch 返回 `new Response('', { status: 200 })`(无 content-type) → invoke 返回 `undefined`                                              |
-| T3.12 | `stubProvider` 返回默认值 + 提供 no-op provider             | `stubProvider('test', 42).invoke()` → 42;`console.warn` spy 被触发                                                                     |
-| T3.13 | `isBackendHttpError` instanceof 分支                       | 对 new BackendHttpError(...) 返回 true                                                                                                 |
-| T3.14 | `isBackendHttpError` duck-typing 分支                      | 构造普通对象 `{ name: 'BackendHttpError', status: 500, code: 'X' }` → 返回 true;缺少 status → false                                    |
-| T3.15 | `withResponseMap` 包装 `httpGet`,data → mapped 透传 + provider no-op | 构造 fetch spy → `const inner = httpGet('/x'); const mapped = withResponseMap(inner, (d: any) => d.raw.toUpperCase())`;invoke → 'ABC'(从 `{raw:'abc'}`) |
-| T3.16 | `wsEmitter(eventName).on(cb)` 返回 unsubscribe             | 调 on 返回函数;调用该函数后再调 emit,cb 不应被触发(**注意**:源码 L394 的 emit 本身是 no-op,测试里不直接测 emit 的触发,而是测 `.on` 行为 + 订阅 registry 通过调试接口可检)。实际操作:用 `vi.stubGlobal('WebSocket', MockWsCtor)` 伪造 WS,触发 message event 来验证 cb 收到;unsubscribe 后再触发 message,cb 不再收到 |
-| T3.17 | `wsMappedEmitter` transform 应用                           | 同上套路 + transform:`(raw: any) => raw.v * 2`;触发 WS message payload = `{v: 3}` → cb 收到 `6`                                       |
-| T3.18 | `stubEmitter` on 返回无害 unsubscribe                     | `const e = stubEmitter('x'); const off = e.on(() => {}); off();` 无报错                                                                 |
+| #     | 用例                                                                 | 实现要点                                                                                                                                                                                                                                                                                                           |
+| ----- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T3.1  | `getBaseUrl` 在 node 环境(无 window) 回退到 127.0.0.1:13400          | 无 stub → 调 `getBaseUrl()` → `http://127.0.0.1:13400`                                                                                                                                                                                                                                                             |
+| T3.2  | `getBaseUrl` 从 `globalThis.__backendPort` 读端口                    | `(globalThis as any).__backendPort = 23456;` → 调 → `http://127.0.0.1:23456`                                                                                                                                                                                                                                       |
+| T3.3  | `getBaseUrl` 从 `window.__backendPort` 优先读                        | `vi.stubGlobal('window', { __backendPort: 34567 })` → `http://127.0.0.1:34567`                                                                                                                                                                                                                                     |
+| T3.4  | `getBaseUrl` WebUI 模式(window + document 且无 port)→ ''             | `vi.stubGlobal('window', {})`、`vi.stubGlobal('document', {})` → `getBaseUrl()` 返回空字符串                                                                                                                                                                                                                       |
+| T3.5  | `httpGet` 构造 `{ provider, invoke }`,`provider` 是 no-op            | `const h = httpGet('/api/x'); h.provider(() => Promise.resolve()); expect(h.provider).toBeTypeOf('function')`;调用不报错,无副作用                                                                                                                                                                                  |
+| T3.6  | `httpGet` invoke 触发 `fetch`,GET 无 body,wrap 解包                  | `vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { x: 1 } }), { status: 200, headers: { 'Content-Type': 'application/json' } })))`;调用 invoke;断言返回 `{ x: 1 }`(data 解包)                                                                                                 |
+| T3.7  | `httpPost` invoke 序列化 body,传 content-type                        | 构造 fetch spy;调用 `httpPost('/api/x').invoke({ k: 'v' })`;断言 spy 被调用;args[1].method === 'POST',args[1].body 是 `JSON.stringify({k:'v'})`,headers 含 `Content-Type: application/json`                                                                                                                        |
+| T3.8  | `httpPost` 传 `mapBody` 自定义映射                                   | `httpPost('/api/x', (p) => ({ wrapped: p })).invoke('raw')`;断言 fetch body = `'{"wrapped":"raw"}'`                                                                                                                                                                                                                |
+| T3.9  | path 作为函数时以 params 展开                                        | `httpGet((p) => `/api/${p.id}`).invoke({ id: 'abc' })`;断言 fetch url 包含 `/api/abc`                                                                                                                                                                                                                              |
+| T3.10 | 非 2xx 响应抛 `BackendHttpError` + code / status / backendMessage    | fetch 返回 `new Response(JSON.stringify({ success: false, error: 'bad', code: 'X_BAD' }), { status: 400, headers: {...} })`;`await expect(invoke).rejects.toBeInstanceOf(BackendHttpError)`;捕获后断言 status=400, code='X_BAD', backendMessage='bad'                                                              |
+| T3.11 | 非 JSON 响应返回 `undefined`                                         | fetch 返回 `new Response('', { status: 200 })`(无 content-type) → invoke 返回 `undefined`                                                                                                                                                                                                                          |
+| T3.12 | `stubProvider` 返回默认值 + 提供 no-op provider                      | `stubProvider('test', 42).invoke()` → 42;`console.warn` spy 被触发                                                                                                                                                                                                                                                 |
+| T3.13 | `isBackendHttpError` instanceof 分支                                 | 对 new BackendHttpError(...) 返回 true                                                                                                                                                                                                                                                                             |
+| T3.14 | `isBackendHttpError` duck-typing 分支                                | 构造普通对象 `{ name: 'BackendHttpError', status: 500, code: 'X' }` → 返回 true;缺少 status → false                                                                                                                                                                                                                |
+| T3.15 | `withResponseMap` 包装 `httpGet`,data → mapped 透传 + provider no-op | 构造 fetch spy → `const inner = httpGet('/x'); const mapped = withResponseMap(inner, (d: any) => d.raw.toUpperCase())`;invoke → 'ABC'(从 `{raw:'abc'}`)                                                                                                                                                            |
+| T3.16 | `wsEmitter(eventName).on(cb)` 返回 unsubscribe                       | 调 on 返回函数;调用该函数后再调 emit,cb 不应被触发(**注意**:源码 L394 的 emit 本身是 no-op,测试里不直接测 emit 的触发,而是测 `.on` 行为 + 订阅 registry 通过调试接口可检)。实际操作:用 `vi.stubGlobal('WebSocket', MockWsCtor)` 伪造 WS,触发 message event 来验证 cb 收到;unsubscribe 后再触发 message,cb 不再收到 |
+| T3.17 | `wsMappedEmitter` transform 应用                                     | 同上套路 + transform:`(raw: any) => raw.v * 2`;触发 WS message payload = `{v: 3}` → cb 收到 `6`                                                                                                                                                                                                                    |
+| T3.18 | `stubEmitter` on 返回无害 unsubscribe                                | `const e = stubEmitter('x'); const off = e.on(() => {}); off();` 无报错                                                                                                                                                                                                                                            |
 
 **最低 12 个用例**(T3.1-T3.12 或等价组合);推荐落 15 以上,完整覆盖 httpBridge.ts 的分支。
 
@@ -627,6 +632,7 @@ mapping (conversation via fromApiConversation, message fields pass-through)."
 用 Write 工具创建 `tests/unit/common-adapter/httpBridge.test.ts`。
 
 **关键约束**:
+
 - 文件顶部 `// @vitest-environment node`(默认就是 node,显式标注以防后续调整全局 env)。
 - 每个 test 用 `beforeEach` + `afterEach` 清理 `vi.unstubAllGlobals()` / `vi.clearAllMocks()`。
 - **禁用** `vi.restoreAllMocks()`(会移除 `vi.mock`,本文件虽无 `vi.mock` 但避免形成习惯;记忆里已有教训)。
@@ -642,6 +648,7 @@ echo "exit=$?"
 ```
 
 **FAIL 诊断路径**:
+
 - `ReferenceError: WebSocket is not defined` → 未 stub WebSocket 全局;在 `beforeEach` 加 `vi.stubGlobal('WebSocket', FakeWs)` + 静态常量。
 - `Cannot read properties of undefined (reading '__backendPort')` → T3.4 WebUI 模式没 stub document;源码判断 `typeof window !== 'undefined' && typeof document !== 'undefined'`,两个都要 stub。
 - `expect(fetch).toHaveBeenCalled()` 失败 → 检查 invoke 是否真的 await;fetch spy 的 resolvedValue 要是 `Response` 实例(不要用 `{ ok: true, status: 200 }` 裸对象,源码会调 `.json()`)。
@@ -674,18 +681,18 @@ wsEmitter/wsMappedEmitter subscribe/dispatch via stubbed WebSocket."
 
 **`migrateProviders`** 依赖 `ipcBridge.mode.listProviders.invoke()` / `ipcBridge.mode.createProvider.invoke()`;import 来自 `@/common`(re-export `adapter/ipcBridge`);必须 `vi.mock('@/common')` stub 出 `ipcBridge.mode.*` 两个方法。
 
-| #    | 用例                                                                  | 断言关键点                                                                                                                      |
-| ---- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| T4.1 | `migrateConfigStorage` 空 configFile:无 key 被写入                    | `configFile.get` 全部 reject or 返回 undefined → `httpRequest` 未被调用(spy 0 次);console.info 命中 "skipped"                  |
-| T4.2 | `migrateConfigStorage` 收集多个 legacy key → 一次 PUT                 | `configFile.get` 对 `'language'` 返回 `'zh-CN'`、`'theme'` 返回 `'dark'`,其它 reject;httpRequest 被调用 1 次,method='PUT', path='/api/settings/client', body 包含 language/theme |
-| T4.3 | `migrateConfigStorage` 忽略 null 值                                   | `configFile.get` 某些 key 返回 null → 不进入 entries;对应 key 不在 body 里                                                      |
-| T4.4 | `migrateConfigStorage` configFile.get 抛异常 → 该 key 跳过            | `configFile.get` 抛错 → 被 catch,该 key 不在 entries                                                                            |
-| T4.5 | `migrateProviders` alreadyDone=true → 提前返回                        | `configFile.get('migration.electronProvidersImported')` 返回 true → 不读 model.config,`ipcBridge.mode.listProviders.invoke` 未被调用 |
-| T4.6 | `migrateProviders` backend 已有 provider → skip + 写入 migration flag | `listProviders.invoke` 返回 `[{id:'x'}]` → 不读 model.config,最终 `configFile.set('migration.electronProvidersImported', true)` 被调 1 次 |
-| T4.7 | `migrateProviders` 正常 case:4 个 legacy → 4 次 create + 置 flag     | backend 返回 `[]`;configFile.get('model.config') 返回 4 个 provider;`createProvider.invoke` 被调用 4 次;各次 body 字段 snake_case 正确(base_url/api_key/models/context_limit/bedrock_config 等) |
-| T4.8 | `migrateProviders` 单条失败不中断全流程                              | `createProvider.invoke` 第 2 条 rejects('fail'),其它成功 → 最后仍 set 'migration.electronProvidersImported' = true;console.warn 至少 1 次 |
-| T4.9 | `migrateProviders` bedrockConfig 映射                                | 输入含 `bedrockConfig: { authMethod: 'accessKey', region: 'us-east-1', accessKeyId: 'x', secretAccessKey: 'y' }` → createProvider body 里 `bedrock_config: { auth_method: 'accessKey', region: 'us-east-1', access_key_id: 'x', secret_access_key: 'y', profile: undefined }` |
-| T4.10| `migrateProviders` modelHealth → model_health 字段转 snake_case       | `modelHealth: { 'gpt-4': { status: 'healthy', lastCheck: 100, latency: 50 } }` → body 里 `model_health: { 'gpt-4': { status: 'healthy', last_check: 100, latency: 50, error: undefined } }`      |
+| #     | 用例                                                                  | 断言关键点                                                                                                                                                                                                                                                                    |
+| ----- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T4.1  | `migrateConfigStorage` 空 configFile:无 key 被写入                    | `configFile.get` 全部 reject or 返回 undefined → `httpRequest` 未被调用(spy 0 次);console.info 命中 "skipped"                                                                                                                                                                 |
+| T4.2  | `migrateConfigStorage` 收集多个 legacy key → 一次 PUT                 | `configFile.get` 对 `'language'` 返回 `'zh-CN'`、`'theme'` 返回 `'dark'`,其它 reject;httpRequest 被调用 1 次,method='PUT', path='/api/settings/client', body 包含 language/theme                                                                                              |
+| T4.3  | `migrateConfigStorage` 忽略 null 值                                   | `configFile.get` 某些 key 返回 null → 不进入 entries;对应 key 不在 body 里                                                                                                                                                                                                    |
+| T4.4  | `migrateConfigStorage` configFile.get 抛异常 → 该 key 跳过            | `configFile.get` 抛错 → 被 catch,该 key 不在 entries                                                                                                                                                                                                                          |
+| T4.5  | `migrateProviders` alreadyDone=true → 提前返回                        | `configFile.get('migration.electronProvidersImported')` 返回 true → 不读 model.config,`ipcBridge.mode.listProviders.invoke` 未被调用                                                                                                                                          |
+| T4.6  | `migrateProviders` backend 已有 provider → skip + 写入 migration flag | `listProviders.invoke` 返回 `[{id:'x'}]` → 不读 model.config,最终 `configFile.set('migration.electronProvidersImported', true)` 被调 1 次                                                                                                                                     |
+| T4.7  | `migrateProviders` 正常 case:4 个 legacy → 4 次 create + 置 flag      | backend 返回 `[]`;configFile.get('model.config') 返回 4 个 provider;`createProvider.invoke` 被调用 4 次;各次 body 字段 snake_case 正确(base_url/api_key/models/context_limit/bedrock_config 等)                                                                               |
+| T4.8  | `migrateProviders` 单条失败不中断全流程                               | `createProvider.invoke` 第 2 条 rejects('fail'),其它成功 → 最后仍 set 'migration.electronProvidersImported' = true;console.warn 至少 1 次                                                                                                                                     |
+| T4.9  | `migrateProviders` bedrockConfig 映射                                 | 输入含 `bedrockConfig: { authMethod: 'accessKey', region: 'us-east-1', accessKeyId: 'x', secretAccessKey: 'y' }` → createProvider body 里 `bedrock_config: { auth_method: 'accessKey', region: 'us-east-1', access_key_id: 'x', secret_access_key: 'y', profile: undefined }` |
+| T4.10 | `migrateProviders` modelHealth → model_health 字段转 snake_case       | `modelHealth: { 'gpt-4': { status: 'healthy', lastCheck: 100, latency: 50 } }` → body 里 `model_health: { 'gpt-4': { status: 'healthy', last_check: 100, latency: 50, error: undefined } }`                                                                                   |
 
 至少 8 个(T4.1-T4.8);推荐 10 个。
 
@@ -723,6 +730,7 @@ import { ipcBridge } from '@/common';
 ```
 
 **每个 test 的 `beforeEach`**:
+
 - `vi.clearAllMocks()`(清 call history,不删 mock 本身)
 - 准备新的 `configFile` stub:`{ get: vi.fn(), set: vi.fn() }`
 
@@ -737,6 +745,7 @@ echo "exit=$?"
 ```
 
 **FAIL 诊断路径**:
+
 - `httpRequest is not a function` → `vi.mock` 顺序错;必须**先** `vi.mock()` 再 `import`。ESM 下 vitest hoist vi.mock 到顶,但显式让它在 import 前书写避免读者困惑。
 - `ipcBridge.mode.listProviders.invoke is not a function` → mock 工厂 return 的 shape 不匹配;检查 requirements 下引用的 adapter `ipcBridge.mode` 名字,源码 ipcBridge.ts ~L(mode 对象)定义了 `listProviders` / `createProvider`。
 - T4.7 某 provider body 的字段名错 → 对照源码 L180-202 的 `requests.map(...).req`(id/platform/name/base_url/api_key/models/enabled/capabilities/context_limit/model_protocols/model_enabled/model_health/bedrock_config)。
@@ -770,13 +779,13 @@ snake_case field mapping (bedrock_config, model_health)."
 
 ### 步骤 7.1 — 断言清单(最少 5 个 test case)
 
-| #    | 用例                                                                           | 断言                                                                                                                                                      |
-| ---- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T5.1 | `BUILTIN_IMAGE_GEN_ID` 是 'builtin-image-gen'                                  | `expect(BUILTIN_IMAGE_GEN_ID).toBe('builtin-image-gen')`(稳定 ID,被 builtin MCP server 引用)                                                              |
-| T5.2 | `ConfigStorage` 暴露 storage.buildStorage 返回的 storage shape(get/set/remove) | `expect(typeof ConfigStorage.get).toBe('function')`;`expect(typeof ConfigStorage.set).toBe('function')`(见 @office-ai/platform 的 storage.buildStorage 实际返回 shape) |
-| T5.3 | `EnvStorage` 与 ConfigStorage 不同实例(namespaces 不同)                       | `expect(ConfigStorage).not.toBe(EnvStorage)`(至少是两个不同引用)                                                                                           |
+| #    | 用例                                                                           | 断言                                                                                                                                                                                                                                                        |
+| ---- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T5.1 | `BUILTIN_IMAGE_GEN_ID` 是 'builtin-image-gen'                                  | `expect(BUILTIN_IMAGE_GEN_ID).toBe('builtin-image-gen')`(稳定 ID,被 builtin MCP server 引用)                                                                                                                                                                |
+| T5.2 | `ConfigStorage` 暴露 storage.buildStorage 返回的 storage shape(get/set/remove) | `expect(typeof ConfigStorage.get).toBe('function')`;`expect(typeof ConfigStorage.set).toBe('function')`(见 @office-ai/platform 的 storage.buildStorage 实际返回 shape)                                                                                      |
+| T5.3 | `EnvStorage` 与 ConfigStorage 不同实例(namespaces 不同)                        | `expect(ConfigStorage).not.toBe(EnvStorage)`(至少是两个不同引用)                                                                                                                                                                                            |
 | T5.4 | `ConfigStorage` namespace 参数 'agent.config' 生效 → set/get roundtrip         | `await ConfigStorage.set('language', 'zh-CN'); await ConfigStorage.get('language')` → `'zh-CN'`。**注意**:若 `storage.buildStorage` 默认走 electron 的 persist,node 环境下会挂;必须 `vi.mock('@office-ai/platform', ...)` 替换为 in-memory 实现(见步骤 7.2) |
-| T5.5 | `EnvStorage` set/get roundtrip with `aionui.dir` 对象                          | `await EnvStorage.set('aionui.dir', { workDir: '/a', cacheDir: '/b' }); await EnvStorage.get('aionui.dir')` → 原对象                                      |
+| T5.5 | `EnvStorage` set/get roundtrip with `aionui.dir` 对象                          | `await EnvStorage.set('aionui.dir', { workDir: '/a', cacheDir: '/b' }); await EnvStorage.get('aionui.dir')` → 原对象                                                                                                                                        |
 
 至少 5 个。如果 `@office-ai/platform` 的 storage 是很薄的 facade,测 roundtrip 没意义,executor 可把 T5.4 / T5.5 合并成"import 不抛"型 smoke 测试,但**至少必须有 5 个独立 test case**。
 
@@ -970,6 +979,7 @@ echo "exit=$?"
 ```
 
 **复跑失败处理**:
+
 - 基线引入破坏 → STOP,escalate
 - 本里程碑和基线的隐性冲突 → 修 + 新建 commit(不 amend)+ handoff Deviations 节如实说
 
@@ -985,6 +995,7 @@ cat /tmp/n3-phase9-final-sha.txt
 ```
 
 **禁止**:
+
 - `git push origin HEAD:feat/backend-migration`(合共享分支)
 - `git push origin HEAD:dev`(合 dev,直接触发 CI)
 - `gh workflow run` / `gh pr create`(违反 UC-F-2)
@@ -1005,7 +1016,7 @@ cat /tmp/n3-phase9-final-sha.txt
 4. **验证证据(UC-F-1,贴原始输出)**:
    - 分支名 + 最新 SHA(从 `/tmp/n3-phase9-final-sha.txt` 读)
    - 基线同步状态:从 `/tmp/n3-phase9-base-sha.txt` 读
-   - lint / tsc / vitest / prek 的头 10 尾 10 + 总行数 + 退出码(从 /tmp/n3-phase9-*.log 读)
+   - lint / tsc / vitest / prek 的头 10 尾 10 + 总行数 + 退出码(从 /tmp/n3-phase9-\*.log 读)
    - 每个新增 test file 对应的 `✓` 行(从 /tmp/n3-phase2..7 各自 tail 截取)
    - 覆盖率表(从 /tmp/n3-phase8-coverage.log 截取 6 个文件行)
    - grep skip/todo 空输出证据(/tmp/n3-phase8-skip.log)
@@ -1059,20 +1070,20 @@ SendMessage({
 
 ## 11. 失败诊断路径汇总
 
-| 失败现象                                                       | 看哪个日志                                | 诊断方向                                                                           |
-| -------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| `bun install` 挂                                               | 终端实时                                  | 网络 / lockfile 损坏 → `rm -rf node_modules && bun install`                        |
-| vitest 找不到 test                                             | /tmp/n3-phaseX-vitest.log                 | 文件名必须 `.test.ts` 且在 `tests/unit/**`;检查 vitest.config.ts include(不改)     |
-| vitest alias `@/` 无法解析                                     | /tmp/n3-phaseX-vitest.log                 | `vitest.config.ts` L4-12 的 aliases;trailing slash 和源码 `@/*`(tsconfig paths)区分开 |
-| tsc 报 "Cannot find module '@/common/...'"                     | /tmp/n3-phase8-tsc.log                    | `tsconfig.json` paths 未指向 packages/desktop/src(M1 已建,通常不应出现)           |
-| `vi.mock('@office-ai/platform', ...)` 未生效                    | vitest run 日志                           | vi.mock 必须在 import 被测模块**之前**声明(vitest ESM 会 hoist,但显式先写更安全)   |
-| `BackendHttpError` instanceof 判负                             | 对应 test 的断言栈                         | 跨模块 HMR 分 chunk,概率极小;对测试场景改用 `isBackendHttpError()` duck-typing     |
-| WebSocket 相关 test 挂 "ReferenceError: WebSocket"             | vitest 日志                               | `vi.stubGlobal('WebSocket', FakeClass)` 缺失 / FakeClass 缺静态常量 OPEN/CONNECTING |
-| coverage 报告 apiModelMapper < 70%                             | /tmp/n3-phase8-coverage.log               | 检查是否遗漏 `toApiModelOptional(undefined)` / `fromApiConversation(null)` 等分支    |
-| prek Oxfmt 报 Failed,未自动修复                               | /tmp/n3-phase8-prek.log                   | `bun run format` → 再跑 prek;修复 diff 要 commit(commit message `style(n3): ...`)   |
-| merge 基线冲突                                                 | `git status` + 冲突文件                    | 简单 resolve;复杂 → STOP,escalate                                                  |
-| push 被拒 `non-fast-forward`                                   | push 命令输出                              | 说明别人在远程提前创建了同名分支;**不得** `--force`,STOP,escalate                   |
-| `grep -rn "mockHttpBridge" tests/unit/common-*` 空             | /tmp/n3-phase8-helper-use.log             | 回到 Phase 6 把 T4 改为消费 helper(见 §步骤 8.5)                                    |
+| 失败现象                                           | 看哪个日志                    | 诊断方向                                                                              |
+| -------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------- |
+| `bun install` 挂                                   | 终端实时                      | 网络 / lockfile 损坏 → `rm -rf node_modules && bun install`                           |
+| vitest 找不到 test                                 | /tmp/n3-phaseX-vitest.log     | 文件名必须 `.test.ts` 且在 `tests/unit/**`;检查 vitest.config.ts include(不改)        |
+| vitest alias `@/` 无法解析                         | /tmp/n3-phaseX-vitest.log     | `vitest.config.ts` L4-12 的 aliases;trailing slash 和源码 `@/*`(tsconfig paths)区分开 |
+| tsc 报 "Cannot find module '@/common/...'"         | /tmp/n3-phase8-tsc.log        | `tsconfig.json` paths 未指向 packages/desktop/src(M1 已建,通常不应出现)               |
+| `vi.mock('@office-ai/platform', ...)` 未生效       | vitest run 日志               | vi.mock 必须在 import 被测模块**之前**声明(vitest ESM 会 hoist,但显式先写更安全)      |
+| `BackendHttpError` instanceof 判负                 | 对应 test 的断言栈            | 跨模块 HMR 分 chunk,概率极小;对测试场景改用 `isBackendHttpError()` duck-typing        |
+| WebSocket 相关 test 挂 "ReferenceError: WebSocket" | vitest 日志                   | `vi.stubGlobal('WebSocket', FakeClass)` 缺失 / FakeClass 缺静态常量 OPEN/CONNECTING   |
+| coverage 报告 apiModelMapper < 70%                 | /tmp/n3-phase8-coverage.log   | 检查是否遗漏 `toApiModelOptional(undefined)` / `fromApiConversation(null)` 等分支     |
+| prek Oxfmt 报 Failed,未自动修复                    | /tmp/n3-phase8-prek.log       | `bun run format` → 再跑 prek;修复 diff 要 commit(commit message `style(n3): ...`)     |
+| merge 基线冲突                                     | `git status` + 冲突文件       | 简单 resolve;复杂 → STOP,escalate                                                     |
+| push 被拒 `non-fast-forward`                       | push 命令输出                 | 说明别人在远程提前创建了同名分支;**不得** `--force`,STOP,escalate                     |
+| `grep -rn "mockHttpBridge" tests/unit/common-*` 空 | /tmp/n3-phase8-helper-use.log | 回到 Phase 6 把 T4 改为消费 helper(见 §步骤 8.5)                                      |
 
 ---
 
@@ -1111,19 +1122,20 @@ git branch -D feat/n3-test-rewrite-adapter-common
 
 ## 13. commit 策略总览
 
-| Phase | Commit message 模板                                                                   |
-| ----- | ------------------------------------------------------------------------------------- |
-| 2     | `test(n3): add mockHttpBridge helper with frozen public signatures` + 签名锁定说明     |
-| 3     | `test(n3): add apiModelMapper unit tests (T1)`                                        |
-| 4     | `test(n3): add searchMapper unit tests (T2)`                                          |
-| 5     | `test(n3): add httpBridge unit tests (T3)`                                            |
-| 6     | `test(n3): add configMigration unit tests (T4)`                                       |
-| 7     | `test(n3): add storage runtime exports unit tests (T5)`                               |
-| 9     | `chore(n3): sync with feat/backend-migration`(merge commit,若基线有更新)              |
-| 9 修复| `test(n3): fix <phaseX> after baseline sync`(若基线同步后需要修 bug)                  |
-| 10    | `docs(n3): add N3 handoff with UC-F evidence and locked mockHttpBridge signature`      |
+| Phase  | Commit message 模板                                                                |
+| ------ | ---------------------------------------------------------------------------------- |
+| 2      | `test(n3): add mockHttpBridge helper with frozen public signatures` + 签名锁定说明 |
+| 3      | `test(n3): add apiModelMapper unit tests (T1)`                                     |
+| 4      | `test(n3): add searchMapper unit tests (T2)`                                       |
+| 5      | `test(n3): add httpBridge unit tests (T3)`                                         |
+| 6      | `test(n3): add configMigration unit tests (T4)`                                    |
+| 7      | `test(n3): add storage runtime exports unit tests (T5)`                            |
+| 9      | `chore(n3): sync with feat/backend-migration`(merge commit,若基线有更新)           |
+| 9 修复 | `test(n3): fix <phaseX> after baseline sync`(若基线同步后需要修 bug)               |
+| 10     | `docs(n3): add N3 handoff with UC-F evidence and locked mockHttpBridge signature`  |
 
 **禁止** 的 commit 模式:
+
 - `wip`
 - `.skip` 任何 test 的 commit
 - 同一 Phase 内多次 amend(改完要新 commit)

@@ -12,21 +12,23 @@ vi.mock('@/renderer/utils/chat/thinkTagFilter', () => ({
   stripThinkTags: (content: string) => content.replace(/<think>.*?<\/think>/g, ''),
 }));
 
-const mockAssistantMessage = (content: string, overrides?: Partial<IMessageText>): IMessageText => ({
-  id: `msg-${Date.now()}`,
-  type: 'text',
-  position: 'left',
-  hidden: false,
-  content: { content },
-  ...overrides,
-} as IMessageText);
+const mockAssistantMessage = (content: string, overrides?: Partial<IMessageText>): IMessageText =>
+  ({
+    id: `msg-${Date.now()}`,
+    type: 'text',
+    position: 'left',
+    hidden: false,
+    content: { content },
+    ...overrides,
+  }) as IMessageText;
 
-const mockUserMessage = (content: string): TMessage => ({
-  id: `msg-${Date.now()}`,
-  type: 'text',
-  position: 'right',
-  content: { content },
-} as TMessage);
+const mockUserMessage = (content: string): TMessage =>
+  ({
+    id: `msg-${Date.now()}`,
+    type: 'text',
+    position: 'right',
+    content: { content },
+  }) as TMessage;
 
 describe('getLastAssistantText', () => {
   it('returns last assistant message content', () => {
@@ -92,11 +94,7 @@ describe('getLastAssistantText', () => {
   });
 
   it('skips empty messages and returns previous valid message', () => {
-    const messages = [
-      mockAssistantMessage('Valid response'),
-      mockAssistantMessage(''),
-      mockAssistantMessage('   '),
-    ];
+    const messages = [mockAssistantMessage('Valid response'), mockAssistantMessage(''), mockAssistantMessage('   ')];
     expect(getLastAssistantText(messages, false)).toBe('Valid response');
   });
 
@@ -114,11 +112,7 @@ describe('getLastAssistantText', () => {
   });
 
   it('returns last valid assistant message in reverse order', () => {
-    const messages = [
-      mockAssistantMessage('First'),
-      mockAssistantMessage('Second'),
-      mockAssistantMessage('Third'),
-    ];
+    const messages = [mockAssistantMessage('First'), mockAssistantMessage('Second'), mockAssistantMessage('Third')];
     expect(getLastAssistantText(messages, false)).toBe('Third');
   });
 

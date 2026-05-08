@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import {
-  getTeamAvailableModels,
-  getTeamDefaultModelId,
-  resolveTeamModelLabel,
-} from '@/common/utils/teamModelUtils';
+import { getTeamAvailableModels, getTeamDefaultModelId, resolveTeamModelLabel } from '@/common/utils/teamModelUtils';
 import type { AcpModelInfo } from '@/common/types/acpTypes';
 import type { IProvider } from '@/common/config/storage';
 

@@ -85,19 +85,21 @@ describe('autoTitle', () => {
   });
 
   describe('deriveAutoTitleFromMessages', () => {
-    const mockUserMessage = (content: string): TMessage => ({
-      id: 'msg-1',
-      type: 'text',
-      position: 'right',
-      content,
-    } as TMessage);
+    const mockUserMessage = (content: string): TMessage =>
+      ({
+        id: 'msg-1',
+        type: 'text',
+        position: 'right',
+        content,
+      }) as TMessage;
 
-    const mockAssistantMessage = (content: string): TMessage => ({
-      id: 'msg-2',
-      type: 'text',
-      position: 'left',
-      content,
-    } as TMessage);
+    const mockAssistantMessage = (content: string): TMessage =>
+      ({
+        id: 'msg-2',
+        type: 'text',
+        position: 'left',
+        content,
+      }) as TMessage;
 
     it('returns title from first user message', () => {
       const messages = [mockUserMessage('User question')];
