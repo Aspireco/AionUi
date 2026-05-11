@@ -14,6 +14,11 @@
   background-color: var(--bg-2);
 }
 
+.sider-section-label .text-t-secondary {
+  color: var(--text-primary) !important;
+  opacity: 0.55;
+}
+
 /* Top-of-content drag strip — lets users drag the window from any page's blank header area.
  * Starts AFTER the floating sider-expand button slot to not steal its clicks.
  * pointer-events:none keeps clicks falling through to other interactive elements,
@@ -76,6 +81,7 @@
 .layout-sider-expand-btn--mobile:hover {
   background-color: var(--fill-1);
 }
+
 
 .layout-sider-expand-btn .i-icon,
 .layout-sider-expand-btn svg {

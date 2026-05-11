@@ -66,6 +66,8 @@
     "pinned": "Pinned",
     "pinFailed": "Pin operation failed",
     "pinnedSection": "Pinned",
+    "projectsSection": "Projeler",
+    "conversationsSection": "Sohbetler",
     "deleteSuccess": "Başarıyla silindi",
     "deleteFailed": "Silme başarısız oldu"
   },

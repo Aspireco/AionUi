@@ -45,11 +45,7 @@ const WorkspaceGroupedHistory: React.FC<WorkspaceGroupedHistoryProps> = ({
   const toggleSection = useCallback((key: string) => {
     setCollapsedSections((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
   }, []);
@@ -523,7 +519,7 @@ const WorkspaceGroupedHistory: React.FC<WorkspaceGroupedHistoryProps> = ({
             {!collapsed && (
               <SectionLabel
                 sectionKey='projects'
-                label={t('conversation.history.projectsSection', { defaultValue: '项目' })}
+                label={t('conversation.history.projectsSection')}
               />
             )}
             {!collapsedSections.has('projects') &&
@@ -619,7 +615,7 @@ const WorkspaceGroupedHistory: React.FC<WorkspaceGroupedHistoryProps> = ({
             {!collapsed && (
               <SectionLabel
                 sectionKey='conversations'
-                label={t('conversation.history.conversationsSection', { defaultValue: '对话' })}
+                label={t('conversation.history.conversationsSection')}
               />
             )}
             {!collapsedSections.has('conversations') &&

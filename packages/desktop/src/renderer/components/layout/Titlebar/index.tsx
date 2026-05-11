@@ -99,7 +99,7 @@ const Titlebar: React.FC<TitlebarProps> = ({ workspaceAvailable }) => {
   const backToChatTooltip = t('common.back', { defaultValue: 'Back to Chat' });
   const isSettingsRoute = location.pathname.startsWith('/settings');
   const iconSize = layout?.isMobile ? 24 : 18;
-  const historySearchIconSize = layout?.isMobile ? iconSize : 16;
+  const historySearchIconSize = iconSize;
   // Desktop uses slimmer strokes to match macOS-native chrome aesthetics;
   // mobile keeps the default weight so icons stay legible at larger sizes.
   const desktopIconStroke = layout?.isMobile ? undefined : 2.5;

@@ -66,6 +66,8 @@
     "pinned": "Pinned",
     "pinFailed": "Pin operation failed",
     "pinnedSection": "Pinned",
+    "projectsSection": "プロジェクト",
+    "conversationsSection": "会話",
     "deleteSuccess": "削除しました",
     "deleteFailed": "削除に失敗しました"
   },

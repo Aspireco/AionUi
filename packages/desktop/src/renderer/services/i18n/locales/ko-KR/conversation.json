@@ -66,6 +66,8 @@
     "pinned": "Pinned",
     "pinFailed": "Pin operation failed",
     "pinnedSection": "Pinned",
+    "projectsSection": "프로젝트",
+    "conversationsSection": "대화",
     "deleteSuccess": "삭제되었습니다",
     "deleteFailed": "삭제에 실패했습니다"
   },

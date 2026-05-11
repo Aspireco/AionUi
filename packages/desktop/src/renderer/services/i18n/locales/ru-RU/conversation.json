@@ -62,6 +62,8 @@
     "pinned": "Закреплено",
     "pinFailed": "Не удалось закрепить",
     "pinnedSection": "Закреплённые",
+    "projectsSection": "Проекты",
+    "conversationsSection": "Чаты",
     "deleteSuccess": "Успешно удалено",
     "deleteFailed": "Не удалось удалить",
     "today": "Сегодня",
