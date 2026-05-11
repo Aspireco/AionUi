@@ -1,7 +1,6 @@
 import { startWebHost, startStaticServer } from '@aionui/web-host';
 import type { WebHostHandle, StaticServerHandle } from '@aionui/web-host';
 import { setTimeout as delay } from 'node:timers/promises';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -35,8 +34,15 @@ function resolveCliRoot(): string {
 const cliRoot = resolveCliRoot();
 
 // `isPackaged` mirrors AppMetadata.isPackaged: true when running as the
-// bun-compiled single-file binary inside a release tarball. resetpass hint
-// text and the macOS quarantine autoclean only apply in that case.
+// bun-compiled single-file binary inside a release tarball. Only the
+// resetpass hint text varies by mode today.
+//
+// Note on macOS quarantine: we tried stripping `com.apple.quarantine` from
+// cliRoot at process start, but Gatekeeper refuses exec _before_ our code
+// runs, so the first launch still fails. Users must either run
+// `xattr -dr com.apple.quarantine <path>` manually or use `install-web.sh`,
+// which does it for them. Until we sign + notarize, there is nothing the
+// binary itself can do about first-launch quarantine.
 const isPackaged = (() => {
   const exeName = path.basename(process.execPath).toLowerCase();
   return exeName === 'aionui-web' || exeName === 'aionui-web.exe';
@@ -45,32 +51,6 @@ const isPackaged = (() => {
 const BACKEND_BINARY = process.platform === 'win32' ? 'aionui-backend.exe' : 'aionui-backend';
 const DEFAULT_PORT = 25808;
 const RESET_COMMAND = isPackaged ? 'aionui-web resetpass' : 'bun run resetpass';
-
-/**
- * Strip com.apple.quarantine xattrs from the tarball directory so macOS
- * Gatekeeper does not block the unsigned `aionui-web` + bundled `aionui-backend`
- * binaries with "damaged, can't be opened" on first launch. Best-effort only;
- * if xattr is missing (non-Apple system, corporate lock-down) or the dir is
- * already clean, do nothing. Idempotent — safe to run every launch.
- *
- * Only runs when the process is the packaged single-file binary: during
- * `bun run webui` / tsx dev the binary is node/bun itself and clearing
- * attributes on `cliRoot` would poke the repo, not a downloaded artifact.
- */
-function maybeClearMacOsQuarantine(): void {
-  if (process.platform !== 'darwin') return;
-  if (!isPackaged) return;
-  try {
-    // `-r` is not needed for a single call on cliRoot; Gatekeeper tags the
-    // binary and the directory separately, so recurse to cover both.
-    spawnSync('xattr', ['-dr', 'com.apple.quarantine', cliRoot], {
-      stdio: 'ignore',
-      timeout: 5_000,
-    });
-  } catch {
-    // xattr missing or permission denied — leave the user to retry manually.
-  }
-}
 
 let currentHandle: WebHostHandle | StaticServerHandle | null = null;
 
@@ -150,7 +130,6 @@ function readPackageVersion(): string {
 }
 
 async function runStart(flags: Map<string, string | true>): Promise<void> {
-  maybeClearMacOsQuarantine();
   const backendBin = resolveBackendBinary(flags);
   const staticDir = resolveStaticDir(flags);
   const dataDir = resolveDataDir(flags);
@@ -273,7 +252,6 @@ async function runStart(flags: Map<string, string | true>): Promise<void> {
  * DB the user normally runs against.
  */
 async function runResetPassword(flags: Map<string, string | true>): Promise<void> {
-  maybeClearMacOsQuarantine();
   const backendBin = resolveBackendBinary(flags);
   if (!fs.existsSync(backendBin)) {
     console.error(`[aionui-web] backend binary not found: ${backendBin}`);
