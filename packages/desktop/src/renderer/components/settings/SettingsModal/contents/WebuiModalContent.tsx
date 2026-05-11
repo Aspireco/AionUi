@@ -233,47 +233,31 @@ const WebuiModalContent: React.FC = () => {
       if (enabled) {
         const localUrl = `http://localhost:${port}`;
 
-        // 减少启动超时到3秒（服务器启动很快）/ Reduce start timeout to 3s (server starts quickly)
-        // webui.start returns { port, localUrl, networkUrl?, lanIP?, initialPassword? } directly
-        const startResult = await Promise.race([
-          webui.start.invoke({ port, allowRemote: allowRemotePreference }),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
-        ]);
+        // Await the real result — Promise.race with a 3s fallback used to hide
+        // backend failures behind a fake "started" toast while the server was
+        // still RESOLVING or had crashed, leaving webui.desktop.enabled unset.
+        const startResult = await webui.start.invoke({ port, allowRemote: allowRemotePreference });
 
-        if (startResult) {
-          const responseIP = startResult.lanIP || currentIP;
-          const responsePassword = startResult.initialPassword;
+        const responseIP = startResult.lanIP || currentIP;
+        const responsePassword = startResult.initialPassword;
 
-          if (responseIP) setCachedIP(responseIP);
-          if (responsePassword) {
-            setCachedPassword(responsePassword);
-            setCanShowPlainPassword(true);
-          }
-
-          setStatus((prev) => ({
-            ...(prev || { adminUsername: 'admin' }),
-            running: true,
-            port,
-            allowRemote: allowRemotePreference,
-            localUrl,
-            networkUrl: allowRemotePreference && responseIP ? `http://${responseIP}:${port}` : undefined,
-            lanIP: responseIP,
-            initialPassword: responsePassword || cachedPassword || prev?.initialPassword,
-          }));
-        } else {
-          setStatus((prev) => ({
-            ...(prev || { adminUsername: 'admin' }),
-            running: true,
-            port,
-            allowRemote: allowRemotePreference,
-            localUrl,
-            lanIP: currentIP || prev?.lanIP,
-            networkUrl: allowRemotePreference && currentIP ? `http://${currentIP}:${port}` : undefined,
-            initialPassword: cachedPassword || prev?.initialPassword,
-          }));
+        if (responseIP) setCachedIP(responseIP);
+        if (responsePassword) {
+          setCachedPassword(responsePassword);
+          setCanShowPlainPassword(true);
         }
 
-        // 启动成功后再持久化 / Persist only after successful start
+        setStatus((prev) => ({
+          ...(prev || { adminUsername: 'admin' }),
+          running: true,
+          port,
+          allowRemote: allowRemotePreference,
+          localUrl,
+          networkUrl: allowRemotePreference && responseIP ? `http://${responseIP}:${port}` : undefined,
+          lanIP: responseIP,
+          initialPassword: responsePassword || cachedPassword || prev?.initialPassword,
+        }));
+
         await configService.set(DESKTOP_WEBUI_ENABLED_KEY, true);
         Message.success(t('settings.webui.startSuccess'));
       } else {
@@ -314,58 +298,29 @@ const WebuiModalContent: React.FC = () => {
           console.error('WebUI stop error:', err);
         }
 
-        // 2. 立即重新启动（服务器停止很快）/ Restart immediately (server stops quickly)
-        // webui.start returns { port, localUrl, networkUrl?, lanIP?, initialPassword? } directly
-        const startResult = await Promise.race([
-          webui.start.invoke({ port, allowRemote: checked }),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
-        ]);
+        // Await the real result — a 3s race fallback used to mask backend
+        // failures as success (see handleToggle).
+        const startResult = await webui.start.invoke({ port, allowRemote: checked });
 
-        if (startResult) {
-          const responseIP = startResult.lanIP;
-          const responsePassword = startResult.initialPassword;
+        const responseIP = startResult.lanIP;
+        const responsePassword = startResult.initialPassword;
 
-          if (responseIP) setCachedIP(responseIP);
-          if (responsePassword) setCachedPassword(responsePassword);
+        if (responseIP) setCachedIP(responseIP);
+        if (responsePassword) setCachedPassword(responsePassword);
 
-          setStatus((prev) => ({
-            ...(prev || { adminUsername: 'admin' }),
-            running: true,
-            port,
-            allowRemote: checked,
-            localUrl: `http://localhost:${port}`,
-            networkUrl: checked && responseIP ? `http://${responseIP}:${port}` : undefined,
-            lanIP: responseIP,
-            initialPassword: responsePassword || cachedPassword || prev?.initialPassword,
-          }));
+        setStatus((prev) => ({
+          ...(prev || { adminUsername: 'admin' }),
+          running: true,
+          port,
+          allowRemote: checked,
+          localUrl: `http://localhost:${port}`,
+          networkUrl: checked && responseIP ? `http://${responseIP}:${port}` : undefined,
+          lanIP: responseIP,
+          initialPassword: responsePassword || cachedPassword || prev?.initialPassword,
+        }));
 
-          // 成功后再持久化 / Persist only after success
-          await configService.set(DESKTOP_WEBUI_ALLOW_REMOTE_KEY, checked);
-          Message.success(t('settings.webui.restartSuccess'));
-        } else {
-          // 响应为空或失败，但服务器可能已启动，检查状态
-          // Response is null or failed, but server might have started, check status
-          const statusData: IWebUIStatus | null = await Promise.race([
-            webui.getStatus.invoke(),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
-          ]);
-
-          if (statusData?.running) {
-            // 服务器实际上已启动 / Server actually started
-            const responseIP = statusData.lanIP;
-            if (responseIP) setCachedIP(responseIP);
-
-            setStatus(statusData);
-            // 成功后再持久化 / Persist only after success
-            await configService.set(DESKTOP_WEBUI_ALLOW_REMOTE_KEY, checked);
-            Message.success(t('settings.webui.restartSuccess'));
-          } else {
-            // 真的启动失败，回滚 / Really failed to start, rollback
-            setAllowRemotePreference(previousAllowRemote);
-            Message.error(t('settings.webui.operationFailed'));
-            setStatus((prev) => (prev ? { ...prev, running: false } : null));
-          }
-        }
+        await configService.set(DESKTOP_WEBUI_ALLOW_REMOTE_KEY, checked);
+        Message.success(t('settings.webui.restartSuccess'));
       } catch (error) {
         // 回滚 UI 状态 / Rollback UI state
         setAllowRemotePreference(previousAllowRemote);
