@@ -296,11 +296,23 @@ aionui-web help
 
 **Manual tarball install** (if `install-web.sh` does not fit your environment):
 
+> ⚠️ **macOS users:** always extract the tarball **from a terminal** with
+> `tar -xzf …`. Do **not** double-click the `.tar.gz` — Finder's built-in
+> Archive Utility propagates the parent tarball's `com.apple.quarantine`
+> xattr onto every extracted file, and Gatekeeper then blocks the first
+> launch with "aionui-web is damaged and can't be opened". Terminal `tar`
+> does not carry quarantine through, so the extracted `aionui-web` runs
+> fine.
+
+> ⚠️ **First launch must run from a terminal** so you can see the initial
+> admin password. The password is printed to stdout once; if you launched
+> from Finder and missed it, run `./aionui-web/aionui-web resetpass` in a
+> terminal to print a new one.
+
 ```bash
 tar -xzf aionui-web-1.9.26-darwin-arm64.tar.gz
-# Runtime removes the macOS quarantine xattr on first launch, so no
-# manual `xattr -dr com.apple.quarantine` step is required.
-./aionui-web/aionui-web start
+cd aionui-web
+./aionui-web                           # prints "Generated initial admin password: …"
 ```
 
 ### `bun run webui` from the repo
