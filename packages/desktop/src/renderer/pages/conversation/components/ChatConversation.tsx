@@ -31,7 +31,6 @@ import AionrsModelSelector from '../platforms/aionrs/AionrsModelSelector';
 import { useAionrsModelSelection } from '../platforms/aionrs/useAionrsModelSelection';
 import { usePreviewContext } from '../Preview';
 import StarOfficeMonitorCard from '../platforms/openclaw/StarOfficeMonitorCard.tsx';
-import ConversationSkillsIndicator from './ConversationSkillsIndicator';
 // import SkillRuleGenerator from './components/SkillRuleGenerator'; // Temporarily hidden
 
 /** Check whether a specific skill is mounted on the conversation. */
@@ -164,7 +163,6 @@ const AionrsConversationPanel: React.FC<{ conversation: AionrsConversation; slid
     headerLeft: <AionrsModelSelector selection={modelSelection} />,
     headerExtra: (
       <div className='flex items-center gap-8px'>
-        <ConversationSkillsIndicator conversation={conversation} />
         <CronJobManager
           conversation_id={conversation.id}
           cron_job_id={conversation.extra?.cron_job_id as string | undefined}
@@ -188,6 +186,7 @@ const AionrsConversationPanel: React.FC<{ conversation: AionrsConversation; slid
         modelSelection={modelSelection}
         session_mode={conversation.extra?.session_mode}
         cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
+        loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
       />
     </ChatLayout>
   );
@@ -227,6 +226,7 @@ const ChatConversation: React.FC<{
             agent_name={assistantDisplayName}
             cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
             hideSendBox={hideSendBox}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           ></AcpChat>
         );
       case 'gemini':
@@ -245,6 +245,7 @@ const ChatConversation: React.FC<{
             agent_name={assistantDisplayName}
             cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
             hideSendBox={hideSendBox}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           />
         );
       case 'codex': // Legacy: codex now uses ACP protocol
@@ -263,6 +264,7 @@ const ChatConversation: React.FC<{
               )?.cached_config_options
             }
             hideSendBox={hideSendBox}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           />
         );
       case 'openclaw-gateway':
@@ -272,6 +274,7 @@ const ChatConversation: React.FC<{
             conversation_id={conversation.id}
             workspace={conversation.extra?.workspace}
             cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           />
         );
       case 'nanobot':
@@ -281,6 +284,7 @@ const ChatConversation: React.FC<{
             conversation_id={conversation.id}
             workspace={conversation.extra?.workspace}
             cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           />
         );
       case 'remote':
@@ -290,6 +294,7 @@ const ChatConversation: React.FC<{
             conversation_id={conversation.id}
             workspace={conversation.extra?.workspace}
             cron_job_id={(conversation.extra as { cron_job_id?: string })?.cron_job_id}
+            loadedSkills={(conversation.extra as { skills?: string[] } | undefined)?.skills}
           />
         );
       default:
@@ -367,7 +372,6 @@ const ChatConversation: React.FC<{
           />
         </div>
       )}
-      <ConversationSkillsIndicator conversation={conversation} />
       {conversation && (
         <div className='shrink-0'>
           <CronJobManager
