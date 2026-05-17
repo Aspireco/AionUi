@@ -49,6 +49,11 @@ COPY package.json bun.lock ./
 COPY patches/ ./patches/
 RUN bun install --production --ignore-scripts
 
+# Aspireco runtime patches to the built server bundle:
+# (1) Tell Express to trust forwarded headers — required because cloudflared/Railway
+#     edge sets X-Forwarded-For, and express-rate-limit throws if trust proxy is off.
+RUN python3 -c "import sys; f='/app/dist-server/server.mjs'; s=open(f).read(); n='function setupBasicMiddleware(app4) {'; p='function setupBasicMiddleware(app4) {\n  app4.set(\"trust proxy\", true); /* Aspireco: trust CF/Railway proxies */'; open(f,'w').write(s.replace(n,p)); print('trust-proxy patch ok')"
+
 # Entrypoint that symlinks Claude/Codex/Gemini/Hermes/OpenClaw config dirs to
 # /data so OAuth credentials + agent state survive container redeploys.
 COPY <<'ENTRYPOINT_EOF' /usr/local/bin/aionui-entrypoint.sh
