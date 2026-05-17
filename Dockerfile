@@ -33,7 +33,7 @@ ENV ALLOW_REMOTE=true
 ENV DATA_DIR=/data
 
 # SQLite data volume — mount with: -v $(pwd)/data:/data
-VOLUME ["/data"]
 EXPOSE 3000
 
 CMD ["bun", "dist-server/server.mjs"]
+
