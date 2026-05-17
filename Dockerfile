@@ -24,15 +24,19 @@ WORKDIR /app
 #   - @anthropic-ai/claude-code  (Claude Code, uses Claude Max OAuth subscription)
 #   - @openai/codex             (Codex, uses ChatGPT Plus OAuth subscription)
 #   - @google/gemini-cli         (Gemini, uses Google account OAuth)
-# This makes them available as Local Agents in AionUi's Agents tab.
+# Also install Python + hermes-agent (Nous Research Hermes Agent) so AionUi
+# detects it locally. NOTE: this is a SEPARATE Hermes instance from the
+# always-on hermes-agent Railway service — no shared MCPs/sessions/OAuth state.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nodejs npm ca-certificates curl git \
+        python3 python3-pip python3-venv pipx \
     && npm install -g \
         @anthropic-ai/claude-code \
         @openai/codex \
         @google/gemini-cli \
     && npm cache clean --force \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install hermes-agent \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /root/.cache
 
 # Copy only build artifacts and production deps
 COPY --from=builder /app/dist-server ./dist-server
@@ -41,20 +45,25 @@ COPY package.json bun.lock ./
 COPY patches/ ./patches/
 RUN bun install --production --ignore-scripts
 
-# Entrypoint that symlinks Claude/Codex/Gemini config dirs to /data so OAuth
-# credentials survive container redeploys. Without this, every redeploy wipes
-# ~/.claude, ~/.codex, ~/.config/gemini and you have to re-OAuth.
+# Entrypoint that symlinks Claude/Codex/Gemini/Hermes config dirs to /data
+# so OAuth credentials + Hermes state survive container redeploys.
 COPY <<'ENTRYPOINT_EOF' /usr/local/bin/aionui-entrypoint.sh
 #!/bin/sh
 set -e
-mkdir -p /data/agents/.claude /data/agents/.codex /data/agents/.config/gemini /data/agents/.config /data/agents/.gemini
+mkdir -p \
+    /data/agents/.claude \
+    /data/agents/.codex \
+    /data/agents/.gemini \
+    /data/agents/.config/gemini \
+    /data/agents/.config \
+    /data/agents/.hermes
 # Make $HOME point at /data/agents so all per-agent state persists
 export HOME=/data/agents
 # Symlinks for tools that hard-code $HOME-relative paths
 mkdir -p /root || true
-[ -L /root/.claude ] || { rm -rf /root/.claude 2>/dev/null || true; ln -sf /data/agents/.claude /root/.claude; }
-[ -L /root/.codex ] || { rm -rf /root/.codex 2>/dev/null || true; ln -sf /data/agents/.codex /root/.codex; }
-[ -L /root/.gemini ] || { rm -rf /root/.gemini 2>/dev/null || true; ln -sf /data/agents/.gemini /root/.gemini; }
+for d in .claude .codex .gemini .hermes; do
+  [ -L "/root/$d" ] || { rm -rf "/root/$d" 2>/dev/null || true; ln -sf "/data/agents/$d" "/root/$d"; }
+done
 exec "$@"
 ENTRYPOINT_EOF
 RUN chmod +x /usr/local/bin/aionui-entrypoint.sh
