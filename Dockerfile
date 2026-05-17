@@ -20,7 +20,7 @@ RUN node scripts/build-server.mjs
 FROM oven/bun:latest AS runtime
 WORKDIR /app
 
-# Install Node.js + global CLI agents that AionUi can auto-detect:
+# Install Node.js 22 (required by openclaw) + global CLI agents that AionUi can auto-detect:
 #   - @anthropic-ai/claude-code  (Claude Code, uses Claude Max OAuth subscription)
 #   - @openai/codex             (Codex, uses ChatGPT Plus OAuth subscription)
 #   - @google/gemini-cli         (Gemini, uses Google account OAuth)
@@ -29,8 +29,10 @@ WORKDIR /app
 # detects it locally. NOTE: this is a SEPARATE Hermes instance from the
 # always-on hermes-agent Railway service — no shared MCPs/sessions/OAuth state.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        nodejs npm ca-certificates curl git \
+        ca-certificates curl gnupg git \
         python3 python3-pip python3-venv pipx \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && npm install -g \
         @anthropic-ai/claude-code \
         @openai/codex \
